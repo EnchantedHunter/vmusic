@@ -2,6 +2,8 @@ package com.enchantedhunter.vmusic.vkutils;
 
 import android.content.Context;
 import android.os.Environment;
+import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.enchantedhunter.vmusic.data.Track;
 import com.google.gson.Gson;
@@ -34,6 +36,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -41,6 +44,12 @@ import java.util.stream.Collectors;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import io.reactivex.Observable;
+import io.reactivex.Observer;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 import static android.content.Context.MODE_PRIVATE;
 
@@ -196,7 +205,7 @@ public class VkUtils {
         return cipherDecrypt;
     }
 
-    public static boolean loadTrack(Track track, Context context) throws Exception {
+    public static boolean loadTrack(final Track track, Context context, final ProgressBar progressBar) throws Exception {
         String url = track.getUrl();
         String playlist = requestAudio(url);
 
@@ -223,7 +232,46 @@ public class VkUtils {
         String key = requestAudio(key_url);
         Cipher cipher = getDecryptor(key);
 
+        final int[] chunksIdx = {0};
+        final int chunksSize = playlistSplitedFilterd.size();
+
         for (String chunk : playlistSplitedFilterd) {
+
+            chunksIdx[0]++;
+
+            Observable.fromCallable(new Callable<Boolean>() {
+                @Override
+                public Boolean call() throws Exception {
+                    return true;
+                }
+            })
+                    .subscribeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new Observer<Boolean>() {
+
+                        @Override
+                        public void onSubscribe(Disposable d) {
+
+                        }
+
+                        @Override
+                        public void onNext(Boolean tracks) {
+
+                            track.progress = (int)(chunksIdx[0] * 100.0 / chunksSize );
+                            progressBar.setProgress( track.progress );
+
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+
+                        }
+
+                        @Override
+                        public void onComplete() {
+
+                        }
+                    });
+
             List<byte[]> segments = new ArrayList<>();
 
             List<String> chunkSplt = Arrays.asList(chunk.split("#EXTINF"));

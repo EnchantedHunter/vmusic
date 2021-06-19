@@ -10,6 +10,7 @@ public class Track {
     private String id;
     private int duration;
 
+    public int progress = 0;
 
     public Track(JsonObject track) {
 //        this.url_im = track.get("image_url").getAsString();

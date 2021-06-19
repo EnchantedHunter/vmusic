@@ -11,14 +11,14 @@
         android:layout_height="90dp">
 
         <RelativeLayout
-            android:layout_width="match_parent"
+            android:layout_width="242dp"
             android:layout_height="match_parent"
             android:padding="1dp">
 
             <ImageView
                 android:id="@+id/person_photo"
-                android:layout_width="54dp"
-                android:layout_height="54dp"
+                android:layout_width="49dp"
+                android:layout_height="46dp"
                 android:layout_alignParentLeft="true"
                 android:layout_alignParentTop="true"
                 android:layout_marginLeft="9dp"
@@ -50,6 +50,28 @@
                 android:layout_toRightOf="@+id/person_photo"
                 android:text="32323"
                 android:textSize="10dp" />
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_marginLeft="10dp"
+                android:layout_below="@+id/person_photo"
+                android:layout_marginTop="5dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+
+                <ProgressBar
+                    android:id="@+id/status_progress"
+                    android:layout_width="match_parent"
+                    android:layout_height="8dp"
+                    android:layout_centerVertical="true"
+                    android:indeterminate="false"
+                    android:indeterminateOnly="false"
+                    android:progressDrawable="@android:drawable/progress_horizontal" />
+
+            </LinearLayout>
+
         </RelativeLayout>
+
     </androidx.cardview.widget.CardView>
+
 </LinearLayout>

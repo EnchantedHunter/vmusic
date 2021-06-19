@@ -1,10 +1,10 @@
 package com.enchantedhunter.vmusic.ui.music;
 
 import android.content.Context;
-import android.os.Environment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -15,8 +15,6 @@ import com.enchantedhunter.vmusic.R;
 import com.enchantedhunter.vmusic.data.Track;
 import com.enchantedhunter.vmusic.vkutils.VkUtils;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -32,11 +30,14 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
 
         TextView title;
         TextView artist;
+        ProgressBar progressBar;
 
         TrackViewHolder(View itemView) {
             super(itemView);
             title = (TextView)itemView.findViewById(R.id.title);
             artist = (TextView)itemView.findViewById(R.id.artist);
+            progressBar = (ProgressBar)itemView.findViewById(R.id.status_progress);
+            progressBar.setProgress(0);
 //            personPhoto = (ImageView)itemView.findViewById(R.id.person_photo);
         }
     }
@@ -55,15 +56,16 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
     @Override
     public MusicListAdapter.TrackViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = inflater.inflate(R.layout.audio_item, parent, false);
-        return  new MusicListAdapter.TrackViewHolder(view);
+        return new MusicListAdapter.TrackViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull MusicListAdapter.TrackViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull final MusicListAdapter.TrackViewHolder holder, int position) {
         final Track track = trackList.get(position);
 
         holder.artist.setText(track.getArtist());
         holder.title.setText(track.getTitle());
+        holder.progressBar.setProgress(track.progress);
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -72,7 +74,7 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
                     @Override
                     public Boolean call() throws Exception {
                         try {
-                            VkUtils.loadTrack(track, context);
+                            VkUtils.loadTrack(track, context, holder.progressBar);
                         } catch (Exception e) {
                             e.printStackTrace();
                             return false;
