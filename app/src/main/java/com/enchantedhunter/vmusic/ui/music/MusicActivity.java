@@ -119,7 +119,7 @@ public class MusicActivity extends AppCompatActivity {
         String token = null;
         try {
             token = LocalStorage.getDataFromFile(MusicActivity.this, LocalStorage.TOKEN_STORAGE);
-            JsonElement resp = VkUtils.request("catalog.getAudio", token, new HashMap<String, String>(){{put("need_blocks", "1"); }});
+            JsonElement resp = VkUtils.request("catalog.getAudio", token, new HashMap<String, String>(){{put("need_blocks", "1"); put("count", "1000"); put("offset","1"); }});
             JsonArray audios = resp.getAsJsonObject().get("response").getAsJsonObject().get("audios").getAsJsonArray();
 
             isStoragePermissionGranted();

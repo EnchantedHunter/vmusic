@@ -2,38 +2,30 @@ package com.enchantedhunter.vmusic.vkutils;
 
 import android.content.Context;
 import android.os.Environment;
-import android.util.Log;
 import android.widget.ProgressBar;
-import android.widget.Toast;
 
 import com.enchantedhunter.vmusic.data.Track;
-import com.enchantedhunter.vmusic.ui.login.LoginActivity;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -42,7 +34,6 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
@@ -52,9 +43,6 @@ import io.reactivex.Observable;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.schedulers.Schedulers;
-
-import static android.content.Context.MODE_PRIVATE;
 
 public class VkUtils {
 
@@ -75,12 +63,13 @@ public class VkUtils {
         return gson.toJson(getHeader()).getBytes();
     }
 
-    public static Map tryToLogin(String login, String pass) throws IOException {
+    public static Map tryToLogin(String login, String pass) throws IOException, URISyntaxException {
 
-        URL url = new URL(String.format("https://oauth.vk.com/token?" +
+        URL url = new URL( String.format("https://oauth.vk.com/token?" +
                 "client_id=2274003&client_secret=hHbZxrka2uZ6jB1inYsH&libverify_support" +
                 "=1&scope=all&v=5.123&lang=en&device_id=91090b1f4bd800af&grant_type=" +
-                "password&username=%s&password=%s&2fa_supported=1", login, pass));
+                "password&username=%s&password=%s&2fa_supported=1", URLEncoder.encode(login, "utf-8"), URLEncoder.encode(pass, "utf-8")));
+
         URLConnection con = url.openConnection();
         HttpURLConnection http = (HttpURLConnection)con;
         http.setRequestMethod("POST");
@@ -88,16 +77,19 @@ public class VkUtils {
 
         http.setFixedLengthStreamingMode(getHeaderBytes().length);
         http.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+//        http.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+        http.setRequestProperty("Content-Length", String.valueOf(gson.toJson(getHeader()).getBytes().length));
+
         http.connect();
         OutputStream os = http.getOutputStream();
         os.write(gson.toJson(getHeader()).getBytes());
 
+        int code = http.getResponseCode();
+        code = http.getResponseCode();
+
         BufferedReader reader = new BufferedReader(new InputStreamReader(http.getInputStream()));
         StringBuilder result = new StringBuilder();
         String line;
-
-        int code = http.getResponseCode();
-        code = http.getResponseCode();
 
         while((line = reader.readLine()) != null) {
             result.append(line);
