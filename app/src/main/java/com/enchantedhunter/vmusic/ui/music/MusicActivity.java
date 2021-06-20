@@ -1,5 +1,9 @@
 package com.enchantedhunter.vmusic.ui.music;
 
+import android.Manifest;
+import android.app.Activity;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 
 import com.enchantedhunter.vmusic.common.LocalStorage;
@@ -10,10 +14,14 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.os.Environment;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
@@ -22,6 +30,7 @@ import com.enchantedhunter.vmusic.R;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,6 +54,9 @@ public class MusicActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.getDefaultNightMode());
+        getSupportActionBar().setTitle(getString(R.string.music_activity));
+
         recyclerView = (RecyclerView)findViewById(R.id.mrv);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setHasFixedSize(true);
@@ -54,11 +66,9 @@ public class MusicActivity extends AppCompatActivity {
             public List<Track> call() throws Exception {
                 return refreshMusicList();
             }
-        }) // Execute in IO thread, i.e. background thread.
+        })
                 .subscribeOn(Schedulers.io())
-                // report or post the result to main thread.
                 .observeOn(AndroidSchedulers.mainThread())
-                // execute this RxJava
                 .subscribe(new Observer<List<Track>>() {
                     @Override
                     public void onSubscribe(Disposable d) {
@@ -83,6 +93,26 @@ public class MusicActivity extends AppCompatActivity {
                 });
     }
 
+    public  boolean isStoragePermissionGranted() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED) {
+                Log.v("TAG","Permission is granted");
+                return true;
+            } else {
+
+                Log.v("TAG","Permission is revoked");
+                ActivityCompat.requestPermissions( MusicActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                return false;
+            }
+        }
+        else { //permission is automatically granted on sdk<23 upon installation
+            Log.v("TAG","Permission is granted");
+            return true;
+        }
+    }
+
+
     private List<Track> refreshMusicList(){
 
         List<Track> tracks = new ArrayList<>();
@@ -92,8 +122,26 @@ public class MusicActivity extends AppCompatActivity {
             JsonElement resp = VkUtils.request("catalog.getAudio", token, new HashMap<String, String>(){{put("need_blocks", "1"); }});
             JsonArray audios = resp.getAsJsonObject().get("response").getAsJsonObject().get("audios").getAsJsonArray();
 
+            isStoragePermissionGranted();
+
             for(int i = 0 ; i < audios.size() ; i ++){
-                tracks.add(new Track(audios.get(i).getAsJsonObject()));
+                Track track = new Track(audios.get(i).getAsJsonObject());
+                File folder = new File(Environment.getExternalStorageDirectory().toString() + "/VMUSIC/" + track.getId());
+
+                if(folder.exists()){
+                    File[] files =  folder.listFiles();
+                    String fileName = String.format("%s-%s", track.getTitle(), track.getArtist());
+
+                    for(File f : files){
+                        if(f.getName().contains(fileName)){
+                            track.progress = 100;
+                            track.isLoaded = true;
+                            break;
+                        }
+                    }
+                }
+
+                tracks.add(track);
             }
             return tracks;
 

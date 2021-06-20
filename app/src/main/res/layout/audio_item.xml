@@ -2,16 +2,16 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="16dp"
+    android:padding="3dp"
     >
 
     <androidx.cardview.widget.CardView
         android:id="@+id/cv"
         android:layout_width="match_parent"
-        android:layout_height="90dp">
+        android:layout_height="95dp">
 
         <RelativeLayout
-            android:layout_width="242dp"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:padding="1dp">
 
@@ -50,6 +50,19 @@
                 android:layout_toRightOf="@+id/person_photo"
                 android:text="32323"
                 android:textSize="10dp" />
+
+            <TextView
+                android:id="@+id/duration"
+                android:layout_width="43dp"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/title"
+                android:layout_marginStart="20dp"
+                android:layout_marginLeft="20dp"
+                android:layout_marginTop="8dp"
+                android:layout_toEndOf="@+id/artist"
+                android:layout_toRightOf="@+id/artist"
+                android:text="01:23"
+                android:textSize="8dp" />
 
             <LinearLayout
                 android:orientation="vertical"

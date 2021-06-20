@@ -3,6 +3,8 @@ package com.enchantedhunter.vmusic.ui.login;
 import android.content.Intent;
 import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
+
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -14,6 +16,7 @@ import com.enchantedhunter.vmusic.ui.music.MusicActivity;
 import com.enchantedhunter.vmusic.vkutils.VkUtils;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 import io.reactivex.Observable;
@@ -32,6 +35,8 @@ public class LoginActivity extends AppCompatActivity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.getDefaultNightMode());
 
         usernameEditText = findViewById(R.id.username);
         passwordEditText = findViewById(R.id.password);
@@ -63,22 +68,23 @@ public class LoginActivity extends AppCompatActivity {
 
     public void tryToLogin(View view) {
 
-        loadingProgressBar.setEnabled(true);
+        loadingProgressBar.setVisibility(View.VISIBLE);
 
         Observable.fromCallable(new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
 
-                String token = null;
+                Map token = null;
                 try {
                     token = VkUtils.tryToLogin(usernameEditText.getText().toString(), passwordEditText.getText().toString());
                 } catch (IOException e) {
+                    e.printStackTrace();
                     return false;
                 }
 
-                if(token != null){
+                if(token.get("access_token") != null){
                     try {
-                        LocalStorage.setDataInFile(LoginActivity.this, LocalStorage.TOKEN_STORAGE, token);
+                        LocalStorage.setDataInFile(LoginActivity.this, LocalStorage.TOKEN_STORAGE, (String) token.get("access_token"));
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -86,15 +92,11 @@ public class LoginActivity extends AppCompatActivity {
                     return false;
                 }
 
-                // RxJava does not accept null return value. Null will be treated as a failure.
-                // So just make it return true.
                 return true;
             }
-        }) // Execute in IO thread, i.e. background thread.
+        })
                 .subscribeOn(Schedulers.io())
-                // report or post the result to main thread.
                 .observeOn(AndroidSchedulers.mainThread())
-                // execute this RxJava
                 .subscribe(new Observer<Boolean>() {
                     @Override
                     public void onSubscribe(Disposable d) {
@@ -104,18 +106,18 @@ public class LoginActivity extends AppCompatActivity {
                     @Override
                     public void onNext(Boolean aBoolean) {
                         if(!aBoolean){
-                            Toast.makeText(getApplicationContext(), "Error", Toast.LENGTH_SHORT).show();
-                            loadingProgressBar.setEnabled(false);
+                            Toast.makeText(getApplicationContext(), "Ошибка", Toast.LENGTH_SHORT).show();
+                            loadingProgressBar.setVisibility(View.GONE);
                         }else {
-                            Toast.makeText(getApplicationContext(), "Success", Toast.LENGTH_SHORT).show();
+//                            Toast.makeText(getApplicationContext(), "Success", Toast.LENGTH_SHORT).show();
                             startMusicActivity();
-                            loadingProgressBar.setEnabled(false);
+                            loadingProgressBar.setVisibility(View.GONE);
                         }
                     }
 
                     @Override
                     public void onError(Throwable e) {
-                        Toast.makeText(getApplicationContext(), "Error", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), "Ошибка", Toast.LENGTH_SHORT).show();
                         loadingProgressBar.setEnabled(false);
                     }
 

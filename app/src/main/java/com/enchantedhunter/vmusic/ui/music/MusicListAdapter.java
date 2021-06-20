@@ -1,6 +1,11 @@
 package com.enchantedhunter.vmusic.ui.music;
 
+import android.Manifest;
+import android.app.Activity;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -9,6 +14,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.enchantedhunter.vmusic.R;
@@ -24,18 +30,24 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
+import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
+import static androidx.core.content.PermissionChecker.checkSelfPermission;
+
 public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.TrackViewHolder> {
 
     public static class TrackViewHolder extends RecyclerView.ViewHolder {
 
         TextView title;
         TextView artist;
+        TextView duration;
+
         ProgressBar progressBar;
 
         TrackViewHolder(View itemView) {
             super(itemView);
             title = (TextView)itemView.findViewById(R.id.title);
             artist = (TextView)itemView.findViewById(R.id.artist);
+            duration = (TextView)itemView.findViewById(R.id.duration);
             progressBar = (ProgressBar)itemView.findViewById(R.id.status_progress);
             progressBar.setProgress(0);
 //            personPhoto = (ImageView)itemView.findViewById(R.id.person_photo);
@@ -59,6 +71,25 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
         return new MusicListAdapter.TrackViewHolder(view);
     }
 
+    public  boolean isStoragePermissionGranted() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (context.checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED) {
+                Log.v("TAG","Permission is granted");
+                return true;
+            } else {
+
+                Log.v("TAG","Permission is revoked");
+                ActivityCompat.requestPermissions( (Activity) context, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                return false;
+            }
+        }
+        else { //permission is automatically granted on sdk<23 upon installation
+            Log.v("TAG","Permission is granted");
+            return true;
+        }
+    }
+
     @Override
     public void onBindViewHolder(@NonNull final MusicListAdapter.TrackViewHolder holder, int position) {
         final Track track = trackList.get(position);
@@ -66,9 +97,20 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
         holder.artist.setText(track.getArtist());
         holder.title.setText(track.getTitle());
         holder.progressBar.setProgress(track.progress);
+
+        int h = track.getDuration()/3600;
+        int m = track.getDuration()/60 - h*60;
+        int s = track.getDuration() - h*60*60 - m*60;
+
+
+        holder.duration.setText( String.format("%02d:%02d:%02d", h, m, s) );
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
+                if(track.isLoaded) return;
+
+                isStoragePermissionGranted();
 
                 Observable.fromCallable(new Callable<Boolean>() {
                     @Override
@@ -95,9 +137,9 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
                     public void onNext(Boolean tracks) {
 
                         if(tracks){
-                            Toast.makeText(context, "Downloaded", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(context, String.format("%s %s загружен", track.getTitle(), track.getArtist()), Toast.LENGTH_SHORT).show();
                         }else {
-                            Toast.makeText(context, "Download Error", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(context, String.format("%s %s не загружен", track.getTitle(), track.getArtist()), Toast.LENGTH_SHORT).show();
                         }
                     }
 

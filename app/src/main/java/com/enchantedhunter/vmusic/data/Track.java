@@ -11,6 +11,7 @@ public class Track {
     private int duration;
 
     public int progress = 0;
+    public boolean isLoaded = false;
 
     public Track(JsonObject track) {
 //        this.url_im = track.get("image_url").getAsString();
@@ -18,7 +19,7 @@ public class Track {
         this.title = track.get("title").getAsString();
         this.duration = Integer.valueOf(track.get("duration").getAsString());
         this.url = track.get("url").getAsString();
-        this.id = track.get("id").getAsString();
+        this.id = track.get("owner_id").getAsString();
     }
 
     @Override

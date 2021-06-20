@@ -2,12 +2,15 @@ package com.enchantedhunter.vmusic.vkutils;
 
 import android.content.Context;
 import android.os.Environment;
+import android.util.Log;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.enchantedhunter.vmusic.data.Track;
+import com.enchantedhunter.vmusic.ui.login.LoginActivity;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.io.BufferedReader;
@@ -72,7 +75,7 @@ public class VkUtils {
         return gson.toJson(getHeader()).getBytes();
     }
 
-    public static String tryToLogin(String login, String pass) throws IOException {
+    public static Map tryToLogin(String login, String pass) throws IOException {
 
         URL url = new URL(String.format("https://oauth.vk.com/token?" +
                 "client_id=2274003&client_secret=hHbZxrka2uZ6jB1inYsH&libverify_support" +
@@ -93,11 +96,14 @@ public class VkUtils {
         StringBuilder result = new StringBuilder();
         String line;
 
+        int code = http.getResponseCode();
+        code = http.getResponseCode();
+
         while((line = reader.readLine()) != null) {
             result.append(line);
         }
 
-        return String.valueOf(gson.fromJson(result.toString(), Map.class).get("access_token"));
+        return gson.fromJson(result.toString(), Map.class);
     }
 
     public static JsonElement request(String method, String token, Map parameters) throws Exception {
@@ -187,6 +193,63 @@ public class VkUtils {
         return bos.toByteArray();
     }
 
+    public static byte[] requestMP3(String url, final ProgressBar progressBar, final Track track) throws Exception {
+
+        HttpURLConnection httpClient =
+                (HttpURLConnection) new URL(url).openConnection();
+
+        httpClient.setRequestMethod("GET");
+        httpClient.setRequestProperty("User-Agent", "Mozilla/5.0");
+        int responseCode = httpClient.getResponseCode();
+
+        byte[] b = new byte[2048];
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataInputStream d = new DataInputStream((InputStream) httpClient.getContent());
+
+        final int[] sum = {0};
+        final int[] c = {0};
+        final int fullSize = httpClient.getContentLength();
+
+        while ((c[0] = d.read(b, 0, b.length)) != -1){
+
+            Observable.fromCallable(new Callable<Boolean>() {
+                @Override
+                public Boolean call() throws Exception {
+                    return true;
+                }
+            })
+                    .subscribeOn(AndroidSchedulers.mainThread())
+                    .subscribe(new Observer<Boolean>() {
+
+                        @Override
+                        public void onSubscribe(Disposable d) {
+
+                        }
+
+                        @Override
+                        public void onNext(Boolean tracks) {
+                            sum[0] += c[0];
+                            track.progress = (int)(100.0 * sum[0]/ fullSize);
+                            progressBar.setProgress( track.progress );
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+
+                        }
+
+                        @Override
+                        public void onComplete() {
+
+                        }
+                    });
+
+            bos.write(b, 0, c[0]);
+        }
+
+        return bos.toByteArray();
+    }
+
     private static Cipher getDecryptor(String key) throws Exception {
 
         byte[] iv = new byte[16];
@@ -205,9 +268,37 @@ public class VkUtils {
         return cipherDecrypt;
     }
 
+    private static void createIfNotExist(String path){
+        File file = new File(path);
+        if(!file.exists()){
+            file.mkdirs();
+        }
+    }
+
     public static boolean loadTrack(final Track track, Context context, final ProgressBar progressBar) throws Exception {
         String url = track.getUrl();
         String playlist = requestAudio(url);
+
+        if(url.contains(".mp3")){
+
+            String fileName = String.format("%s-%s.mp3", track.getTitle(), track.getArtist());
+
+            String folder = Environment.getExternalStorageDirectory().toString() + "/VMUSIC/" + track.getId();
+            createIfNotExist(folder);
+
+            File file = new File(folder, fileName);
+
+            if(!file.exists())
+                file.createNewFile();
+
+            byte[] mp3 = requestMP3(url, progressBar, track);
+
+            FileOutputStream outputStream = new FileOutputStream(file, true);
+            outputStream.write(mp3);
+            outputStream.close();
+
+            return true;
+        }
 
         Pattern pattern2 = Pattern.compile("/\\w*\\.m3u8");
         Matcher matcher2 = pattern2.matcher(url);
@@ -295,14 +386,16 @@ public class VkUtils {
 
             }
             String fileName = String.format("%s-%s.ts", track.getTitle(), track.getArtist());
+            String folder = Environment.getExternalStorageDirectory().toString() + "/VMUSIC/" + track.getId();
 
+            createIfNotExist(folder);
 
-            File myFile = new File(Environment.getExternalStorageDirectory().toString() + "/" + fileName);
+            File file = new File(folder, fileName);
 
-            if(!myFile.exists())
-                myFile.createNewFile();
+            if(!file.exists())
+                file.createNewFile();
 
-            FileOutputStream outputStream = new FileOutputStream(myFile, true);
+            FileOutputStream outputStream = new FileOutputStream(file, true);
             for (int l = 0; l < segments.size(); l++)
                 outputStream.write(segments.get(l));
             outputStream.close();
