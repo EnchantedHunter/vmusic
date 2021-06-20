@@ -9,6 +9,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -40,7 +41,7 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
         TextView title;
         TextView artist;
         TextView duration;
-
+        ImageView imageView;
         ProgressBar progressBar;
 
         TrackViewHolder(View itemView) {
@@ -49,6 +50,7 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
             artist = (TextView)itemView.findViewById(R.id.artist);
             duration = (TextView)itemView.findViewById(R.id.duration);
             progressBar = (ProgressBar)itemView.findViewById(R.id.status_progress);
+            imageView = (ImageView)itemView.findViewById(R.id.person_photo);
             progressBar.setProgress(0);
 //            personPhoto = (ImageView)itemView.findViewById(R.id.person_photo);
         }
@@ -102,6 +104,11 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
         int m = track.getDuration()/60 - h*60;
         int s = track.getDuration() - h*60*60 - m*60;
 
+        if(track.isLoaded)
+            holder.imageView.setImageResource(R.mipmap.ic_play);
+        else
+            holder.imageView.setImageResource(R.mipmap.ic_download);
+
 
         holder.duration.setText( String.format("%02d:%02d:%02d", h, m, s) );
         holder.itemView.setOnClickListener(new View.OnClickListener() {
@@ -137,6 +144,7 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
                     public void onNext(Boolean tracks) {
 
                         if(tracks){
+                            holder.imageView.setImageResource(R.mipmap.ic_play);
                             Toast.makeText(context, String.format("%s %s загружен", track.getTitle(), track.getArtist()), Toast.LENGTH_SHORT).show();
                         }else {
                             Toast.makeText(context, String.format("%s %s не загружен", track.getTitle(), track.getArtist()), Toast.LENGTH_SHORT).show();
