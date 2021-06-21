@@ -8,10 +8,13 @@ public class Track {
     private String title;
     private String url;
     private String id;
+    private String track_id;
+
     private int duration;
 
     public int progress = 0;
     public boolean isLoaded = false;
+    public String savedPath;
 
     public Track(JsonObject track) {
 //        this.url_im = track.get("image_url").getAsString();
@@ -20,6 +23,11 @@ public class Track {
         this.duration = Integer.valueOf(track.get("duration").getAsString());
         this.url = track.get("url").getAsString();
         this.id = track.get("owner_id").getAsString();
+        this.track_id = track.get("id").getAsString();
+    }
+
+    public Track(){
+
     }
 
     @Override
@@ -69,5 +77,21 @@ public class Track {
 
     public void setId(String id) {
         this.id = id;
+    }
+
+    public boolean isSaved(){
+        return  isLoaded;
+    }
+
+    public String getSavedPath(){
+        return savedPath;
+    }
+
+    public String getTrackId() {
+        return track_id;
+    }
+
+    public void setTrackId(String track_id) {
+        this.track_id = track_id;
     }
 }

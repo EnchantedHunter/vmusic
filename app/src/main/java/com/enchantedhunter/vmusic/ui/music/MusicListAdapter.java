@@ -3,6 +3,7 @@ package com.enchantedhunter.vmusic.ui.music;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.util.Log;
@@ -20,6 +21,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.enchantedhunter.vmusic.R;
 import com.enchantedhunter.vmusic.data.Track;
+import com.enchantedhunter.vmusic.service.AudioService;
 import com.enchantedhunter.vmusic.vkutils.VkUtils;
 
 import java.util.List;
@@ -115,7 +117,19 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
             @Override
             public void onClick(View v) {
 
-                if(track.isLoaded) return;
+                if(track.isLoaded) {
+
+                    context.startService(new Intent(context, AudioService.class)
+                            .putExtra(AudioService.SERVICE_ACTION, AudioService.ACTION.PLAY.name())
+                            .putExtra(AudioService.AUDIO_TRACK_ID_PARAM, track.getTrackId())
+                            .putExtra(AudioService.AUDIO_TRACK_ARTIST_PARAM, track.getArtist())
+                            .putExtra(AudioService.AUDIO_TRACK_NAME_PARAM, track.getTitle())
+                            .putExtra(AudioService.AUDIO_TRACK_URL_PARAM, track.getUrl())
+                            .putExtra(AudioService.AUDIO_TRACK_USER_ID, track.getTrackId())
+                            .putExtra(AudioService.AUDIO_TRACK_DURATION_PARAM, track.getDuration()) );
+
+                    return;
+                }
 
                 isStoragePermissionGranted();
 
