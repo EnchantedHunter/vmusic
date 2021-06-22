@@ -279,7 +279,7 @@ public class VkUtils {
 
         if(url.contains(".mp3")){
 
-            String fileName = String.format("%s-%s.mp3", track.getTitle(), track.getArtist());
+            String fileName = String.format("%s-%s.mp3", track.getTitle(), track.getArtist()).replaceAll("\"", "").replaceAll(":", "");
 
             String folder = Environment.getExternalStorageDirectory().toString() + "/VMUSIC/" + track.getOwnerId();
             createIfNotExist(folder);
@@ -403,7 +403,7 @@ public class VkUtils {
             outputStream.close();
         }
 
-        String saveFileName = String.format("%s-%s.mp3", track.getTitle(), track.getArtist());
+        String saveFileName = String.format("%s-%s.mp3", track.getTitle(), track.getArtist()).replaceAll("\"", "").replaceAll(":", "");
         String fileName = String.format("%s-%s.ts", track.getTitle(), track.getArtist());
         String folder = Environment.getExternalStorageDirectory().toString() + "/VMUSIC/" + track.getOwnerId();
 

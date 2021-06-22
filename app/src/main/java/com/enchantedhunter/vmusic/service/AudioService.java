@@ -1,24 +1,35 @@
 package com.enchantedhunter.vmusic.service;
 
+import android.annotation.SuppressLint;
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.media.RemoteControlClient;
 import android.net.Uri;
+import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.widget.RemoteViews;
 
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
+import androidx.core.app.NotificationCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import com.enchantedhunter.vmusic.R;
 import com.enchantedhunter.vmusic.data.Track;
+import com.enchantedhunter.vmusic.ui.music.MusicActivity;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,6 +58,8 @@ public class AudioService extends Service implements
         PREV,
         SEEK_TO
     }
+
+    private final static int NOTIFICATION_ID = 3561;
 
     public final static String AUDIO_PROVIDER = "OFFLINE_MODE";
     public final static String AUDIO_TRACK_ID_PARAM = "TRACK_ID";
@@ -101,6 +114,90 @@ public class AudioService extends Service implements
     @Override
     public IBinder onBind(Intent intent) {
         return null;
+    }
+
+    private void sentNotificationInForeground() {
+        try {
+            if (currentTrack != null) {
+                String title = currentTrack.getArtist() + " - " + currentTrack.getTitle();
+
+                updateLockscreenMetadata(title);
+
+                Intent notificationIntent = new Intent(this, MusicActivity.class);
+
+                PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+//                PendingIntent pendingIntentPlayPause = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_PLAY_PAUSE), PendingIntent.FLAG_UPDATE_CURRENT);
+//                PendingIntent pendingIntentStop = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_STOP), PendingIntent.FLAG_UPDATE_CURRENT);
+//                PendingIntent pendingIntentPrev = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_PREV), PendingIntent.FLAG_UPDATE_CURRENT);
+//                PendingIntent pendingIntentNext = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_NEXT), PendingIntent.FLAG_UPDATE_CURRENT);
+//
+
+                if (notificationManager == null) {
+                    notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                }
+
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    if (mChannel == null) {
+                        mChannel = new NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_DEFAULT);
+                        mChannel.enableVibration(false);
+                        mChannel.setVibrationPattern(null);
+                        mChannel.enableLights(false);
+                        mChannel.setSound(null, null);
+                        notificationManager.createNotificationChannel(mChannel);
+                    }
+                }
+
+                NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId);
+
+                RemoteViews contentView = new RemoteViews(getPackageName(), R.layout.audio_service_notification);
+
+                contentView.setTextViewText(R.id.trackName, currentTrack.getArtist() + " - " + currentTrack.getTitle());
+
+//                contentView.setOnClickPendingIntent(R.id.prev, pendingIntentPrev);
+//
+//                contentView.setOnClickPendingIntent(R.id.pp, pendingIntentPlayPause);
+                if (mediaPlayer != null) {
+                    if (!mediaPlayer.isPlaying()) {
+                        contentView.setImageViewResource(R.id.pp, R.mipmap.ic_play);
+                        setRemoteClientPlaybackState(RemoteControlClient.PLAYSTATE_PAUSED);
+                    } else {
+                        contentView.setImageViewResource(R.id.pp, R.mipmap.ic_play);
+                        setRemoteClientPlaybackState(RemoteControlClient.PLAYSTATE_PLAYING);
+                    }
+                }
+//
+//                contentView.setOnClickPendingIntent(R.id.next, pendingIntentNext);
+//
+//                contentView.setOnClickPendingIntent(R.id.close, pendingIntentStop);
+
+                builder.setContentIntent(pendingIntent);
+                builder.setContent(contentView);
+                builder.setCustomBigContentView(contentView);
+                builder.setSmallIcon(R.mipmap.ic_music_note_black_24dp);
+                builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+
+                builder.setPriority(Notification.PRIORITY_DEFAULT);
+                builder.setOnlyAlertOnce(true);
+                builder.setSound(null);
+                builder.setVibrate(null);
+
+                Notification notification = builder.build();
+                startForeground(NOTIFICATION_ID, notification);
+
+                String imageUrl = currentTrack.getUrl();
+                if (imageUrl != null && !imageUrl.isEmpty()) {
+//                    Picasso.with(this)
+//                            .load(imageUrl)
+//                            .into(contentView, R.id.image, NOTIFICATION_ID, notification);
+                } else {
+//                    Picasso.with(this)
+//                            .load(R.mipmap.note)
+//                            .into(contentView, R.id.image, NOTIFICATION_ID, notification);
+                }
+            }
+        } catch (Exception e) {
+            Log.e("err", e.toString());
+        }
     }
 
     @Override
@@ -222,7 +319,9 @@ public class AudioService extends Service implements
 
                 currentTrack = track;
                 preparePlayerForPlay();
-                
+
+
+
                 break;
 
             case NEXT:
@@ -329,7 +428,7 @@ public class AudioService extends Service implements
 
         if (currentTrack.isSaved()) {
             if (new File(currentTrack.getSavedPath()).exists())
-                mediaPlayer.setDataSource(currentTrack.getSavedPath());
+                mediaPlayer.setDataSource(this, Uri.parse(currentTrack.getSavedPath()));
             else
                 mediaPlayer.setDataSource(this, Uri.parse(currentTrack.getUrl()));
         } else {
@@ -429,10 +528,6 @@ public class AudioService extends Service implements
     private NotificationManager notificationManager;
     private NotificationChannel mChannel;
 
-    private void sentNotificationInForeground() {
-
-    }
-
     private void updateLockscreenMetadata(String tittle) {
         if (remoteControlClient != null) {
             RemoteControlClient.MetadataEditor metadataEditor = remoteControlClient.editMetadata(true);
@@ -454,4 +549,5 @@ public class AudioService extends Service implements
         stopForeground(true);
         stopSelf();
     }
+
 }

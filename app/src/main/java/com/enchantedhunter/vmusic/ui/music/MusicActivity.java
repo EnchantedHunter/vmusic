@@ -152,7 +152,7 @@ public class MusicActivity extends AppCompatActivity {
 
                 if(folder.exists()){
                     File[] files =  folder.listFiles();
-                    String fileName = String.format("%s-%s", track.getTitle(), track.getArtist());
+                    String fileName = String.format("%s-%s", track.getTitle(), track.getArtist()).replaceAll("\"", "").replaceAll(":", "");
 
                     for(File f : files){
                         if(f.getName().contains(fileName)){
