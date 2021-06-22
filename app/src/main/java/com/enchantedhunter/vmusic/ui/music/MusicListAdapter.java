@@ -33,9 +33,6 @@ import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
-import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
-import static androidx.core.content.PermissionChecker.checkSelfPermission;
-
 public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.TrackViewHolder> {
 
     public static class TrackViewHolder extends RecyclerView.ViewHolder {
@@ -79,17 +76,13 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (context.checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED) {
-                Log.v("TAG","Permission is granted");
                 return true;
             } else {
-
-                Log.v("TAG","Permission is revoked");
                 ActivityCompat.requestPermissions( (Activity) context, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
                 return false;
             }
         }
-        else { //permission is automatically granted on sdk<23 upon installation
-            Log.v("TAG","Permission is granted");
+        else {
             return true;
         }
     }
@@ -111,7 +104,6 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
         else
             holder.imageView.setImageResource(R.mipmap.ic_download);
 
-
         holder.duration.setText( String.format("%02d:%02d:%02d", h, m, s) );
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -121,12 +113,16 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
 
                     context.startService(new Intent(context, AudioService.class)
                             .putExtra(AudioService.SERVICE_ACTION, AudioService.ACTION.PLAY.name())
-                            .putExtra(AudioService.AUDIO_TRACK_ID_PARAM, track.getTrackId())
-                            .putExtra(AudioService.AUDIO_TRACK_ARTIST_PARAM, track.getArtist())
-                            .putExtra(AudioService.AUDIO_TRACK_NAME_PARAM, track.getTitle())
-                            .putExtra(AudioService.AUDIO_TRACK_URL_PARAM, track.getUrl())
-                            .putExtra(AudioService.AUDIO_TRACK_USER_ID, track.getTrackId())
-                            .putExtra(AudioService.AUDIO_TRACK_DURATION_PARAM, track.getDuration()) );
+                            .putExtra(AudioService.AUDIO_TRACK, track));
+
+//                    context.startService(new Intent(context, AudioService.class)
+//                            .putExtra(AudioService.SERVICE_ACTION, AudioService.ACTION.PLAY.name())
+//                            .putExtra(AudioService.AUDIO_TRACK_ID_PARAM, track.getTrackId())
+//                            .putExtra(AudioService.AUDIO_TRACK_ARTIST_PARAM, track.getArtist())
+//                            .putExtra(AudioService.AUDIO_TRACK_NAME_PARAM, track.getTitle())
+//                            .putExtra(AudioService.AUDIO_TRACK_URL_PARAM, track.getUrl())
+//                            .putExtra(AudioService.AUDIO_TRACK_USER_ID, track.getTrackId())
+//                            .putExtra(AudioService.AUDIO_TRACK_DURATION_PARAM, track.getDuration()) );
 
                     return;
                 }

@@ -2,6 +2,7 @@ package com.enchantedhunter.vmusic.ui.music;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,6 +23,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Environment;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Toast;
@@ -83,7 +86,7 @@ public class MusicActivity extends AppCompatActivity {
 
                     @Override
                     public void onError(Throwable e) {
-                        Toast.makeText(getApplicationContext(), "Error", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(getApplicationContext(), "Ошибка", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
@@ -93,21 +96,43 @@ public class MusicActivity extends AppCompatActivity {
                 });
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_exit:
+
+                try {
+                    LocalStorage.setDataInFile(MusicActivity.this, LocalStorage.TOKEN_STORAGE, null);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                this.finish();
+                startActivity(new Intent(this, LoginActivity.class));
+
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
     public  boolean isStoragePermissionGranted() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED) {
-                Log.v("TAG","Permission is granted");
                 return true;
             } else {
-
-                Log.v("TAG","Permission is revoked");
                 ActivityCompat.requestPermissions( MusicActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
                 return false;
             }
         }
-        else { //permission is automatically granted on sdk<23 upon installation
-            Log.v("TAG","Permission is granted");
+        else {
             return true;
         }
     }
@@ -126,7 +151,7 @@ public class MusicActivity extends AppCompatActivity {
 
             for(int i = 0 ; i < audios.size() ; i ++){
                 Track track = new Track(audios.get(i).getAsJsonObject());
-                File folder = new File(Environment.getExternalStorageDirectory().toString() + "/VMUSIC/" + track.getId());
+                File folder = new File(Environment.getExternalStorageDirectory().toString() + "/VMUSIC/" + track.getOwnerId());
 
                 if(folder.exists()){
                     File[] files =  folder.listFiles();
@@ -136,6 +161,7 @@ public class MusicActivity extends AppCompatActivity {
                         if(f.getName().contains(fileName)){
                             track.progress = 100;
                             track.isLoaded = true;
+                            track.setSavedPath(f.toString());
                             break;
                         }
                     }

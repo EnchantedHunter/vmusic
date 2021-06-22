@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">vmusic</string>
+    <string name="app_name">v*music</string>
     <string name="music_activity">Музыка</string>
 
     <!-- Strings related to login -->
@@ -20,4 +20,6 @@
 
     <string name="hello_first_fragment">Hello first fragment</string>
     <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
+    <string name="exit">Выйти из аккаунта</string>
+    <string name="enter">Логин</string>
 </resources>

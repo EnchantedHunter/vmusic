@@ -2,8 +2,11 @@ package com.enchantedhunter.vmusic.vkutils;
 
 import android.content.Context;
 import android.os.Environment;
+import android.util.Log;
 import android.widget.ProgressBar;
 
+import com.arthenica.mobileffmpeg.Config;
+import com.arthenica.mobileffmpeg.FFmpeg;
 import com.enchantedhunter.vmusic.data.Track;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -43,6 +46,9 @@ import io.reactivex.Observable;
 import io.reactivex.Observer;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+
+import static com.arthenica.mobileffmpeg.Config.RETURN_CODE_CANCEL;
+import static com.arthenica.mobileffmpeg.Config.RETURN_CODE_SUCCESS;
 
 public class VkUtils {
 
@@ -275,7 +281,7 @@ public class VkUtils {
 
             String fileName = String.format("%s-%s.mp3", track.getTitle(), track.getArtist());
 
-            String folder = Environment.getExternalStorageDirectory().toString() + "/VMUSIC/" + track.getId();
+            String folder = Environment.getExternalStorageDirectory().toString() + "/VMUSIC/" + track.getOwnerId();
             createIfNotExist(folder);
 
             File file = new File(folder, fileName);
@@ -288,6 +294,8 @@ public class VkUtils {
             FileOutputStream outputStream = new FileOutputStream(file, true);
             outputStream.write(mp3);
             outputStream.close();
+
+            track.setSavedPath(file.toString());
 
             return true;
         }
@@ -377,8 +385,10 @@ public class VkUtils {
                 }
 
             }
+
+            String saveFileName = String.format("%s-%s.mp3", track.getTitle(), track.getArtist());
             String fileName = String.format("%s-%s.ts", track.getTitle(), track.getArtist());
-            String folder = Environment.getExternalStorageDirectory().toString() + "/VMUSIC/" + track.getId();
+            String folder = Environment.getExternalStorageDirectory().toString() + "/VMUSIC/" + track.getOwnerId();
 
             createIfNotExist(folder);
 
@@ -391,7 +401,26 @@ public class VkUtils {
             for (int l = 0; l < segments.size(); l++)
                 outputStream.write(segments.get(l));
             outputStream.close();
+        }
 
+        String saveFileName = String.format("%s-%s.mp3", track.getTitle(), track.getArtist());
+        String fileName = String.format("%s-%s.ts", track.getTitle(), track.getArtist());
+        String folder = Environment.getExternalStorageDirectory().toString() + "/VMUSIC/" + track.getOwnerId();
+
+        File file = new File(folder, fileName);
+        File fileMP3 = new File(folder, saveFileName);
+
+        int rc = FFmpeg.execute(String.format("-y -i \"%s\" -c copy \"%s\"", file.toString(), fileMP3.toString()));
+
+        if (rc == RETURN_CODE_SUCCESS) {
+            track.setSavedPath(fileMP3.toString());
+            file.delete();
+            Log.i(Config.TAG, "Command execution completed successfully.");
+        } else if (rc == RETURN_CODE_CANCEL) {
+            Log.i(Config.TAG, "Command execution cancelled by user.");
+        } else {
+            Log.i(Config.TAG, String.format("Command execution failed with rc=%d and the output below.", rc));
+            Config.printLastCommandOutput(Log.INFO);
         }
         return true;
     }

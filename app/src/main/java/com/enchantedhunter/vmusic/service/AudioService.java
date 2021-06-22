@@ -33,7 +33,6 @@ public class AudioService extends Service implements
 
     private final String LOG_TAG = this.getClass().getSimpleName();
 
-    //ACTION command from Activity//////////////////////////////////////////////////////////////////
     public final static String SERVICE_ACTION = "ACTION";
 
     public enum ACTION {
@@ -74,6 +73,7 @@ public class AudioService extends Service implements
     }
 
     //public final static String AUDIO_TRACK_POSITION_PARAM = "TRACK_POSITION";
+    public final static String AUDIO_TRACK = "TRACK";
     public final static String AUDIO_TRACK_NAME_PARAM = "TRACK_NAME";
     public final static String AUDIO_TRACK_ARTIST_PARAM = "TRACK_ARTIST";
     public final static String AUDIO_TRACK_DURATION_PARAM = "TRACK_DURATION";
@@ -106,7 +106,6 @@ public class AudioService extends Service implements
     public final static String NOTIFICATION_ACTION_PLAY_PAUSE = "VKMD2.AUDIO_SERVICE.PLAY_PAUSE";
     public final static String NOTIFICATION_ACTION_NEXT = "VKMD2.AUDIO_SERVICE.NEXT";
     public final static String NOTIFICATION_ACTION_STOP = "VKMD2.AUDIO_SERVICE.STOP";
-    ////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Nullable
     @Override
@@ -229,13 +228,14 @@ public class AudioService extends Service implements
                 registerPhoneStateListener();
                 registerRemoteClient();
 
-                Track track = new Track();
-                track.setArtist(intent.getStringExtra(AUDIO_TRACK_ARTIST_PARAM));
-                track.setTitle(intent.getStringExtra(AUDIO_TRACK_NAME_PARAM));
-                track.setUrl(intent.getStringExtra(AUDIO_TRACK_URL_PARAM));
-                track.setTrackId(intent.getStringExtra(AUDIO_TRACK_ID_PARAM));
-                track.setDuration(intent.getIntExtra (AUDIO_TRACK_DURATION_PARAM, 60));
-                track.setId(intent.getStringExtra(AUDIO_TRACK_USER_ID));
+                Track track = (Track) intent.getExtras().getSerializable(AudioService.AUDIO_TRACK);
+//                Track track = new Track();
+//                track.setArtist(intent.getStringExtra(AUDIO_TRACK_ARTIST_PARAM));
+//                track.setTitle(intent.getStringExtra(AUDIO_TRACK_NAME_PARAM));
+//                track.setUrl(intent.getStringExtra(AUDIO_TRACK_URL_PARAM));
+//                track.setTrackId(intent.getStringExtra(AUDIO_TRACK_ID_PARAM));
+//                track.setDuration(intent.getIntExtra (AUDIO_TRACK_DURATION_PARAM, 60));
+//                track.setId(intent.getStringExtra(AUDIO_TRACK_USER_ID));
 
                 currentTrack = track;
 //                Log.d("PLAY, currentTrackId: " + currentTrack.getTrackId());

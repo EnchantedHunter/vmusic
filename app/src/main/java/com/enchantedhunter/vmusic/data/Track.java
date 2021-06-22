@@ -2,28 +2,28 @@ package com.enchantedhunter.vmusic.data;
 
 import com.google.gson.JsonObject;
 
-public class Track {
+import java.io.Serializable;
+
+public class Track implements Serializable {
 
     private String artist;
     private String title;
     private String url;
-    private String id;
-    private String track_id;
+    private String ownerId;
+    private String trackId;
+    private String savedPath;
 
     private int duration;
-
     public int progress = 0;
     public boolean isLoaded = false;
-    public String savedPath;
 
     public Track(JsonObject track) {
-//        this.url_im = track.get("image_url").getAsString();
         this.artist = track.get("artist").getAsString();
         this.title = track.get("title").getAsString();
         this.duration = Integer.valueOf(track.get("duration").getAsString());
         this.url = track.get("url").getAsString();
-        this.id = track.get("owner_id").getAsString();
-        this.track_id = track.get("id").getAsString();
+        this.ownerId = track.get("owner_id").getAsString();
+        this.trackId = track.get("id").getAsString();
     }
 
     public Track(){
@@ -71,27 +71,25 @@ public class Track {
         this.duration = duration;
     }
 
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
     public boolean isSaved(){
         return  isLoaded;
     }
 
+    public String getTrackId() {
+        return trackId;
+    }
+
+    public void setTrackId(String trackId) {
+        this.trackId = trackId;
+    }
+
+    public String getOwnerId() { return ownerId; }
+
+    public void setOwnerId(String ownerId) { this.ownerId = ownerId; }
+
+    public void setSavedPath(String savedPath) { this.savedPath = savedPath; }
+
     public String getSavedPath(){
         return savedPath;
-    }
-
-    public String getTrackId() {
-        return track_id;
-    }
-
-    public void setTrackId(String track_id) {
-        this.track_id = track_id;
     }
 }
