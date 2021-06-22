@@ -51,10 +51,8 @@ public class AudioService extends Service implements
     public final static String AUDIO_PROVIDER = "OFFLINE_MODE";
     public final static String AUDIO_TRACK_ID_PARAM = "TRACK_ID";
     public final static String AUDIO_SEEK_PARAM = "SEEK_TO";
-    ////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-    //Event from Service to Activity////////////////////////////////////////////////////////////////
     public final static String SERVICE_BROADCAST = "VKMD2.AUDIO_SERVICE.BROADCAST";
     public final static String SERVICE_EVENT = "EVENT";
 
@@ -72,7 +70,6 @@ public class AudioService extends Service implements
         ERROR
     }
 
-    //public final static String AUDIO_TRACK_POSITION_PARAM = "TRACK_POSITION";
     public final static String AUDIO_TRACK = "TRACK";
     public final static String AUDIO_TRACK_NAME_PARAM = "TRACK_NAME";
     public final static String AUDIO_TRACK_ARTIST_PARAM = "TRACK_ARTIST";
@@ -82,9 +79,7 @@ public class AudioService extends Service implements
     public final static String AUDIO_TRACK_PROGRESS_PARAM = "TRACK_PROGRESS";
     public final static String AUDIO_TRACK_IS_PLAY_PARAM = "TRACK_IS_PLAY";
     public final static String AUDIO_TRACK_USER_ID = "TRACK_USER_ID";
-    ////////////////////////////////////////////////////////////////////////////////////////////////
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////
     private int startId;
 
     private MediaPlayer mediaPlayer;
@@ -101,11 +96,6 @@ public class AudioService extends Service implements
 
     private RemoteControlClient remoteControlClient;
 
-    private final static int NOTIFICATION_ID = 6661;
-    public final static String NOTIFICATION_ACTION_PREV = "VKMD2.AUDIO_SERVICE.PREV";
-    public final static String NOTIFICATION_ACTION_PLAY_PAUSE = "VKMD2.AUDIO_SERVICE.PLAY_PAUSE";
-    public final static String NOTIFICATION_ACTION_NEXT = "VKMD2.AUDIO_SERVICE.NEXT";
-    public final static String NOTIFICATION_ACTION_STOP = "VKMD2.AUDIO_SERVICE.STOP";
 
     @Nullable
     @Override
@@ -229,16 +219,8 @@ public class AudioService extends Service implements
                 registerRemoteClient();
 
                 Track track = (Track) intent.getExtras().getSerializable(AudioService.AUDIO_TRACK);
-//                Track track = new Track();
-//                track.setArtist(intent.getStringExtra(AUDIO_TRACK_ARTIST_PARAM));
-//                track.setTitle(intent.getStringExtra(AUDIO_TRACK_NAME_PARAM));
-//                track.setUrl(intent.getStringExtra(AUDIO_TRACK_URL_PARAM));
-//                track.setTrackId(intent.getStringExtra(AUDIO_TRACK_ID_PARAM));
-//                track.setDuration(intent.getIntExtra (AUDIO_TRACK_DURATION_PARAM, 60));
-//                track.setId(intent.getStringExtra(AUDIO_TRACK_USER_ID));
 
                 currentTrack = track;
-//                Log.d("PLAY, currentTrackId: " + currentTrack.getTrackId());
                 preparePlayerForPlay();
                 
                 break;

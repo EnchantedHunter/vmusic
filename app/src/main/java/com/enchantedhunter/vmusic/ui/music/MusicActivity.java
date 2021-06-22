@@ -1,7 +1,6 @@
 package com.enchantedhunter.vmusic.ui.music;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -9,10 +8,9 @@ import android.os.Bundle;
 
 import com.enchantedhunter.vmusic.common.LocalStorage;
 import com.enchantedhunter.vmusic.data.Track;
+import com.enchantedhunter.vmusic.service.AudioService;
 import com.enchantedhunter.vmusic.ui.login.LoginActivity;
 import com.enchantedhunter.vmusic.vkutils.VkUtils;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -22,11 +20,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Environment;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
-import android.view.View;
 import android.widget.Toast;
 
 import com.enchantedhunter.vmusic.R;
@@ -34,7 +29,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -113,6 +107,9 @@ public class MusicActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
 
+                this.startService(new Intent(this, AudioService.class)
+                        .putExtra(AudioService.SERVICE_ACTION, AudioService.ACTION.STOP.name()));
+
                 this.finish();
                 startActivity(new Intent(this, LoginActivity.class));
 
@@ -137,12 +134,12 @@ public class MusicActivity extends AppCompatActivity {
         }
     }
 
-
     private List<Track> refreshMusicList(){
 
         List<Track> tracks = new ArrayList<>();
         String token = null;
         try {
+
             token = LocalStorage.getDataFromFile(MusicActivity.this, LocalStorage.TOKEN_STORAGE);
             JsonElement resp = VkUtils.request("catalog.getAudio", token, new HashMap<String, String>(){{put("need_blocks", "1"); put("count", "1000"); put("offset","1"); }});
             JsonArray audios = resp.getAsJsonObject().get("response").getAsJsonObject().get("audios").getAsJsonArray();

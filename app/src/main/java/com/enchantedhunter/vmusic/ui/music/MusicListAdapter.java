@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -40,7 +39,8 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
         TextView title;
         TextView artist;
         TextView duration;
-        ImageView imageView;
+        ImageView play;
+        ImageView download;
         ProgressBar progressBar;
 
         TrackViewHolder(View itemView) {
@@ -49,9 +49,14 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
             artist = (TextView)itemView.findViewById(R.id.artist);
             duration = (TextView)itemView.findViewById(R.id.duration);
             progressBar = (ProgressBar)itemView.findViewById(R.id.status_progress);
-            imageView = (ImageView)itemView.findViewById(R.id.person_photo);
+
+            download = (ImageView)itemView.findViewById(R.id.download_btn_);
+            download.setImageResource(R.mipmap.ic_download);
+
+            play = (ImageView)itemView.findViewById(R.id.play_btn_);
+            play.setImageResource(R.mipmap.ic_play);
+
             progressBar.setProgress(0);
-//            personPhoto = (ImageView)itemView.findViewById(R.id.person_photo);
         }
     }
 
@@ -99,33 +104,29 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
         int m = track.getDuration()/60 - h*60;
         int s = track.getDuration() - h*60*60 - m*60;
 
-        if(track.isLoaded)
-            holder.imageView.setImageResource(R.mipmap.ic_play);
-        else
-            holder.imageView.setImageResource(R.mipmap.ic_download);
+        if(track.isLoaded){
+            holder.download.setVisibility(View.GONE);
+            holder.progressBar.setVisibility(View.GONE);
+        }else {
+            holder.download.setVisibility(View.VISIBLE);
+            holder.progressBar.setVisibility(View.VISIBLE);
+        }
 
         holder.duration.setText( String.format("%02d:%02d:%02d", h, m, s) );
-        holder.itemView.setOnClickListener(new View.OnClickListener() {
+
+        holder.play.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View view) {
+                context.startService(new Intent(context, AudioService.class)
+                        .putExtra(AudioService.SERVICE_ACTION, AudioService.ACTION.PLAY.name())
+                        .putExtra(AudioService.AUDIO_TRACK, track));
+            }
+        });
+
+        holder.download.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                if(track.isLoaded) {
-
-                    context.startService(new Intent(context, AudioService.class)
-                            .putExtra(AudioService.SERVICE_ACTION, AudioService.ACTION.PLAY.name())
-                            .putExtra(AudioService.AUDIO_TRACK, track));
-
-//                    context.startService(new Intent(context, AudioService.class)
-//                            .putExtra(AudioService.SERVICE_ACTION, AudioService.ACTION.PLAY.name())
-//                            .putExtra(AudioService.AUDIO_TRACK_ID_PARAM, track.getTrackId())
-//                            .putExtra(AudioService.AUDIO_TRACK_ARTIST_PARAM, track.getArtist())
-//                            .putExtra(AudioService.AUDIO_TRACK_NAME_PARAM, track.getTitle())
-//                            .putExtra(AudioService.AUDIO_TRACK_URL_PARAM, track.getUrl())
-//                            .putExtra(AudioService.AUDIO_TRACK_USER_ID, track.getTrackId())
-//                            .putExtra(AudioService.AUDIO_TRACK_DURATION_PARAM, track.getDuration()) );
-
-                    return;
-                }
 
                 isStoragePermissionGranted();
 
@@ -154,8 +155,10 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
                     public void onNext(Boolean tracks) {
 
                         if(tracks){
-                            holder.imageView.setImageResource(R.mipmap.ic_play);
                             Toast.makeText(context, String.format("%s %s загружен", track.getTitle(), track.getArtist()), Toast.LENGTH_SHORT).show();
+                            track.isLoaded = true;
+                            holder.download.setVisibility(View.GONE);
+                            holder.progressBar.setVisibility(View.GONE);
                         }else {
                             Toast.makeText(context, String.format("%s %s не загружен", track.getTitle(), track.getArtist()), Toast.LENGTH_SHORT).show();
                         }

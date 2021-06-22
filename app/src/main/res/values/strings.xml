@@ -22,4 +22,7 @@
     <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
     <string name="exit">Выйти из аккаунта</string>
     <string name="enter">Логин</string>
+    <string name="_01_23">01:23</string>
+    <string name="_32323">32323</string>
+    <string name="_1234">1234</string>
 </resources>
