@@ -148,6 +148,8 @@ public class VkUtils {
             result.append(line);
         }
 
+        String all = result.toString();
+
         return parser.parse(result.toString());
     }
 

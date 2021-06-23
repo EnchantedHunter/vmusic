@@ -52,10 +52,10 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
             progressBar = (ProgressBar)itemView.findViewById(R.id.status_progress);
 
             download = (ImageView)itemView.findViewById(R.id.download_btn_);
-            download.setImageResource(R.mipmap.ic_download);
+            download.setImageResource(R.mipmap.download);
 
             play = (ImageView)itemView.findViewById(R.id.play_btn_);
-            play.setImageResource(R.mipmap.ic_play);
+            play.setImageResource(R.mipmap.play);
 
             progressBar.setProgress(0);
         }
@@ -121,7 +121,7 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
             public void onClick(View view) {
                 context.startService(new Intent(context, AudioService.class)
                         .putExtra(AudioService.SERVICE_ACTION, AudioService.ACTION.PLAY.name())
-                        .putExtra(AudioService.AUDIO_TRACKS, (Serializable) trackList)
+//                        .putExtra(AudioService.AUDIO_TRACKS, (Serializable) trackList)
                         .putExtra(AudioService.AUDIO_TRACK, track));
             }
         });

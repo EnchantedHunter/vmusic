@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="150dp"
     android:background="@android:color/white"
     android:orientation="horizontal">
 
@@ -35,14 +35,15 @@
                 android:id="@+id/trackName"
                 style="bold"
                 android:layout_width="292dp"
-                android:layout_height="match_parent"
+                android:layout_height="60dp"
                 android:layout_weight="1"
                 android:ellipsize="end"
                 android:fontFamily="sans-serif-medium"
                 android:gravity="center"
                 android:maxLines="1"
                 android:text="Track name"
-                android:textColor="@color/colorPrimaryDark" />
+                android:textColor="@color/colorPrimaryDark"
+                android:textSize="15dp" />
 
             <ImageView
                 android:id="@+id/close_btn"

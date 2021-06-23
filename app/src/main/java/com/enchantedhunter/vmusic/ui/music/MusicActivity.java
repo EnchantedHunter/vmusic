@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Environment;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
@@ -27,6 +28,8 @@ import android.widget.Toast;
 import com.enchantedhunter.vmusic.R;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -141,8 +144,58 @@ public class MusicActivity extends AppCompatActivity {
         try {
 
             token = LocalStorage.getDataFromFile(MusicActivity.this, LocalStorage.TOKEN_STORAGE);
-            JsonElement resp = VkUtils.request("catalog.getAudio", token, new HashMap<String, String>(){{put("need_blocks", "1"); put("count", "1000"); put("offset","1"); }});
+            JsonElement resp = VkUtils.request("catalog.getAudio", token, new HashMap<String, String>(){{put("need_blocks", "1");}});
+
+            JsonArray sections = resp.getAsJsonObject().get("response").getAsJsonObject().get("catalog").getAsJsonObject().get("sections").getAsJsonArray();
             JsonArray audios = resp.getAsJsonObject().get("response").getAsJsonObject().get("audios").getAsJsonArray();
+
+            String default_section_id = resp.getAsJsonObject().get("response").getAsJsonObject().get("catalog").getAsJsonObject().get("default_section").getAsString();
+
+            JsonObject music_section = sections.get(0).getAsJsonObject();
+            for( int i = 0 ; i < sections.size() ; i ++){
+                if(sections.get(i).getAsJsonObject().get("id").equals(default_section_id)){
+                    music_section = sections.get(i).getAsJsonObject();
+                    break;
+                }
+            }
+
+            String next_start = music_section.get("next_from").getAsString();
+
+//            try{
+                while (next_start != null){
+                    HashMap params = new HashMap<String, String>();
+                    params.put("start_from", next_start);
+                    params.put("section_id", music_section.get("id").getAsString());
+                    JsonElement resp1 = VkUtils.request("catalog.getSection", token, params);
+                    if(resp1 == null)
+                        for(int k = 0 ; k < 10 ; k++){
+                            resp1 = VkUtils.request("catalog.getSection", token, params);
+                            if(resp1!=null)
+                                break;
+                        }
+
+                    JsonElement response = resp1.getAsJsonObject().get("response");
+                        if(response != null){
+                            JsonElement section = response.getAsJsonObject().get("section");
+                            if(section != null){
+                                JsonElement next_from = section.getAsJsonObject().get("next_from");
+                                if(next_from != null){
+                                    next_start = resp1.getAsJsonObject().get("response").getAsJsonObject().get("section").getAsJsonObject().get("next_from").getAsString();
+                                }else
+                                    break;
+                            }else
+                                break;
+                        }else
+                            break;
+
+                    audios.addAll(resp1.getAsJsonObject().get("response").getAsJsonObject().get("audios").getAsJsonArray());
+
+                }
+
+//            }catch(Exception e){
+//                Log.e("err", e.toString());
+//            }
+
 
             isStoragePermissionGranted();
 
@@ -173,5 +226,4 @@ public class MusicActivity extends AppCompatActivity {
         }
         return null;
     }
-
 }

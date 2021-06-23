@@ -113,7 +113,6 @@ public class AudioService extends Service implements
     public final static String NOTIFICATION_ACTION_NEXT = "VMUS.AUDIO_SERVICE.NEXT";
     public final static String NOTIFICATION_ACTION_STOP = "VMUS.AUDIO_SERVICE.STOP";
 
-
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -310,7 +309,7 @@ public class AudioService extends Service implements
                 registerPhoneStateListener();
                 registerRemoteClient();
 
-                tracks = (List<Track>) intent.getExtras().getSerializable(AudioService.AUDIO_TRACKS);
+//                tracks = (List<Track>) intent.getExtras().getSerializable(AudioService.AUDIO_TRACKS);
 
                 Track track = (Track) intent.getExtras().getSerializable(AudioService.AUDIO_TRACK);
 
