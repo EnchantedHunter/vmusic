@@ -1,6 +1,5 @@
 package com.enchantedhunter.vmusic.service;
 
-import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -8,14 +7,14 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.graphics.Color;
 import android.media.AudioManager;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.media.RemoteControlClient;
 import android.net.Uri;
-import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
@@ -23,16 +22,15 @@ import android.util.Log;
 import android.widget.RemoteViews;
 
 import androidx.annotation.Nullable;
-import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.enchantedhunter.vmusic.R;
 import com.enchantedhunter.vmusic.data.Track;
-import com.enchantedhunter.vmusic.ui.music.MusicActivity;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -59,8 +57,6 @@ public class AudioService extends Service implements
         SEEK_TO
     }
 
-    private final static int NOTIFICATION_ID = 3561;
-
     public final static String AUDIO_PROVIDER = "OFFLINE_MODE";
     public final static String AUDIO_TRACK_ID_PARAM = "TRACK_ID";
     public final static String AUDIO_SEEK_PARAM = "SEEK_TO";
@@ -84,6 +80,8 @@ public class AudioService extends Service implements
     }
 
     public final static String AUDIO_TRACK = "TRACK";
+    public final static String AUDIO_TRACKS = "TRACKS";
+
     public final static String AUDIO_TRACK_NAME_PARAM = "TRACK_NAME";
     public final static String AUDIO_TRACK_ARTIST_PARAM = "TRACK_ARTIST";
     public final static String AUDIO_TRACK_DURATION_PARAM = "TRACK_DURATION";
@@ -109,6 +107,12 @@ public class AudioService extends Service implements
 
     private RemoteControlClient remoteControlClient;
 
+    private final static int NOTIFICATION_ID = 7771;
+    public final static String NOTIFICATION_ACTION_PREV = "VMUS.AUDIO_SERVICE.PREV";
+    public final static String NOTIFICATION_ACTION_PLAY_PAUSE = "VMUS.AUDIO_SERVICE.PLAY_PAUSE";
+    public final static String NOTIFICATION_ACTION_NEXT = "VMUS.AUDIO_SERVICE.NEXT";
+    public final static String NOTIFICATION_ACTION_STOP = "VMUS.AUDIO_SERVICE.STOP";
+
 
     @Nullable
     @Override
@@ -124,17 +128,14 @@ public class AudioService extends Service implements
                 updateLockscreenMetadata(title);
 
                 Intent notificationIntent = new Intent(this, AudioService.class);
-
                 PendingIntent pendingIntent = PendingIntent.getService(this, 0, notificationIntent, 0);
-//                PendingIntent pendingIntentPlayPause = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_PLAY_PAUSE), PendingIntent.FLAG_UPDATE_CURRENT);
-//                PendingIntent pendingIntentStop = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_STOP), PendingIntent.FLAG_UPDATE_CURRENT);
-//                PendingIntent pendingIntentPrev = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_PREV), PendingIntent.FLAG_UPDATE_CURRENT);
-//                PendingIntent pendingIntentNext = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_NEXT), PendingIntent.FLAG_UPDATE_CURRENT);
-//
+                PendingIntent pendingIntentPlayPause = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_PLAY_PAUSE), PendingIntent.FLAG_UPDATE_CURRENT);
+                PendingIntent pendingIntentStop = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_STOP), PendingIntent.FLAG_UPDATE_CURRENT);
+                PendingIntent pendingIntentPrev = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_PREV), PendingIntent.FLAG_UPDATE_CURRENT);
+                PendingIntent pendingIntentNext = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_NEXT), PendingIntent.FLAG_UPDATE_CURRENT);
 
-                Intent closeIntent = new Intent(this, AudioService.class).putExtra(AudioService.SERVICE_ACTION, AudioService.ACTION.STOP.name());
-                PendingIntent closePendingIntent = PendingIntent.getService(this, 0, closeIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-
+                Intent playPauseIntent = new Intent(this, AudioService.class).putExtra(AudioService.SERVICE_ACTION, ACTION.PLAY_OR_PAUSE.toString());
+                PendingIntent playPausePendingIntent = PendingIntent.getService(this, 0, playPauseIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
                 if (notificationManager == null) {
                     notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -153,27 +154,25 @@ public class AudioService extends Service implements
 
                 NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId);
                 RemoteViews contentView = new RemoteViews(getPackageName(), R.layout.audio_service_notification);
-//                contentView.setOnClickPendingIntent(R.id.close, pendingIntent);
-                contentView.setTextViewText(R.id.trackName, currentTrack.getArtist() + " - " + currentTrack.getTitle());
+                contentView.setTextViewText(R.id.trackName, currentTrack.getArtist() + " " + currentTrack.getTitle());
 
-//                contentView.setOnClickPendingIntent(R.id.prev, pendingIntentPrev);
-//
-//                contentView.setOnClickPendingIntent(R.id.pp, pendingIntentPlayPause);
+                contentView.setOnClickPendingIntent(R.id.prev, pendingIntentPrev);
+                contentView.setOnClickPendingIntent(R.id.pp, pendingIntentPlayPause);
+
                 if (mediaPlayer != null) {
                     if (!mediaPlayer.isPlaying()) {
-                        contentView.setImageViewResource(R.id.pp, R.mipmap.ic_play);
+                        contentView.setImageViewResource(R.id.pp, R.mipmap.play);
                         setRemoteClientPlaybackState(RemoteControlClient.PLAYSTATE_PAUSED);
                     } else {
-                        contentView.setImageViewResource(R.id.pp, R.mipmap.ic_play);
+                        contentView.setImageViewResource(R.id.pp, R.mipmap.pause);
                         setRemoteClientPlaybackState(RemoteControlClient.PLAYSTATE_PLAYING);
                     }
                 }
-//
-//                contentView.setOnClickPendingIntent(R.id.next, pendingIntentNext);
-//
-                contentView.setOnClickPendingIntent(R.id.pp, closePendingIntent);
 
-                builder.setContentIntent(closePendingIntent);
+                contentView.setOnClickPendingIntent(R.id.next, pendingIntentNext);
+                contentView.setOnClickPendingIntent(R.id.close_btn, pendingIntentStop);
+
+                builder.setContentIntent(playPausePendingIntent);
                 builder.setContentIntent(pendingIntent);
                 builder.setContent(contentView);
                 builder.setCustomBigContentView(contentView);
@@ -188,16 +187,6 @@ public class AudioService extends Service implements
                 Notification notification = builder.build();
                 startForeground(NOTIFICATION_ID, notification);
 
-                String imageUrl = currentTrack.getUrl();
-                if (imageUrl != null && !imageUrl.isEmpty()) {
-//                    Picasso.with(this)
-//                            .load(imageUrl)
-//                            .into(contentView, R.id.image, NOTIFICATION_ID, notification);
-                } else {
-//                    Picasso.with(this)
-//                            .load(R.mipmap.note)
-//                            .into(contentView, R.id.image, NOTIFICATION_ID, notification);
-                }
             }
         } catch (Exception e) {
             Log.e("err", e.toString());
@@ -290,6 +279,8 @@ public class AudioService extends Service implements
 
     }
 
+    List<Track> tracks = null;
+
     private void handleAction(ACTION action, Intent intent) throws IOException, NullPointerException {
         switch (action) {
 
@@ -319,6 +310,8 @@ public class AudioService extends Service implements
                 registerPhoneStateListener();
                 registerRemoteClient();
 
+                tracks = (List<Track>) intent.getExtras().getSerializable(AudioService.AUDIO_TRACKS);
+
                 Track track = (Track) intent.getExtras().getSerializable(AudioService.AUDIO_TRACK);
 
                 currentTrack = track;
@@ -329,29 +322,55 @@ public class AudioService extends Service implements
                 break;
 
             case NEXT:
-//                trackProvider.setRandomEnabled(randomIsEnabled);
-//                Track nextTrack = trackProvider.getNextTrack(currentTrack);
-//                if (nextTrack != null) {
-//                    this.currentTrack = nextTrack;
-//                    preparePlayerForPlay();
-//                } else {
-//                    mediaPlayer.pause();
-//                    sendBroadcastToActivity(EVENT.PAUSE);
-//                }
-//
-//                sentNotificationInForeground();
+
+                if(tracks != null){
+                    int next = -1;
+                    for(int i = 0 ;i < tracks.size() ; i++){
+                        if(tracks.get(i).equals(currentTrack)){
+                            next = i + 1;
+                            break;
+                        }
+                    }
+
+                    if(next >= tracks.size())
+                        next = 0;
+
+                    Track nextTrack = tracks.get(next);
+                    if (nextTrack != null) {
+                        this.currentTrack = nextTrack;
+                        preparePlayerForPlay();
+                    } else {
+                        mediaPlayer.pause();
+                        sendBroadcastToActivity(EVENT.PAUSE);
+                    }
+                }
+
+                sentNotificationInForeground();
                 break;
 
             case PREV:
-//                Track prevTrack = trackProvider.getPreviousTrack(currentTrack);
-//                if (prevTrack != null) {
-//                    this.currentTrack = prevTrack;
-//                    preparePlayerForPlay();
-//                } else {
-//                    mediaPlayer.pause();
-//                    sendBroadcastToActivity(EVENT.PAUSE);
-//                }
-//                sentNotificationInForeground();
+                if(tracks != null){
+                    int prev = -1;
+                    for(int i = 0 ;i < tracks.size() ; i++){
+                        if(tracks.get(i).equals(currentTrack)){
+                            prev = i - 1;
+                            break;
+                        }
+                    }
+
+                    if(prev < 0)
+                        prev = tracks.size() - 1;
+
+                    Track prevTrack = tracks.get(prev);
+                    if (prevTrack != null) {
+                        this.currentTrack = prevTrack;
+                        preparePlayerForPlay();
+                    } else {
+                        mediaPlayer.pause();
+                        sendBroadcastToActivity(EVENT.PAUSE);
+                    }
+                }
+
                 break;
 
             case PAUSE:
@@ -552,6 +571,31 @@ public class AudioService extends Service implements
         stop();
         stopForeground(true);
         stopSelf();
+    }
+
+    class MPTimerTask extends TimerTask {
+
+        @Override
+        public void run() {
+
+            if (mediaPlayer != null) {
+                if (mediaPlayer.isPlaying()) {
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                int currentPosition = mediaPlayer.getCurrentPosition();
+                                if (currentPosition > 0) {
+//                                    TimerTask.this.sendBroadcastToActivity(EVENT.PROGRESS_UPDATE);
+                                }
+                            } catch (Exception e) {
+                                Log.e("err", e.toString());
+                            }
+                        }
+                    });
+                }
+            }
+        }
     }
 
 }

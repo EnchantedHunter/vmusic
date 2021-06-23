@@ -23,6 +23,7 @@ import com.enchantedhunter.vmusic.data.Track;
 import com.enchantedhunter.vmusic.service.AudioService;
 import com.enchantedhunter.vmusic.vkutils.VkUtils;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -120,6 +121,7 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
             public void onClick(View view) {
                 context.startService(new Intent(context, AudioService.class)
                         .putExtra(AudioService.SERVICE_ACTION, AudioService.ACTION.PLAY.name())
+                        .putExtra(AudioService.AUDIO_TRACKS, (Serializable) trackList)
                         .putExtra(AudioService.AUDIO_TRACK, track));
             }
         });

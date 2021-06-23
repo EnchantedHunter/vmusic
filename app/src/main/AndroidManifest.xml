@@ -19,11 +19,15 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <receiver
+            android:name=".service.AudioServiceNotificationReceiver"
+            android:enabled="true"
+            android:exported="true"></receiver>
 
         <service
             android:name=".service.AudioService"
             android:enabled="true"
-            android:exported="false"></service>
+            android:exported="false" />
 
         <activity
             android:name=".ui.music.MusicActivity"

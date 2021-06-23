@@ -2,6 +2,8 @@ package com.enchantedhunter.vmusic.vkutils;
 
 import android.content.Context;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.ProgressBar;
 
@@ -83,7 +85,6 @@ public class VkUtils {
 
         http.setFixedLengthStreamingMode(getHeaderBytes().length);
         http.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-//        http.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
         http.setRequestProperty("Content-Length", String.valueOf(gson.toJson(getHeader()).getBytes().length));
 
         http.connect();
@@ -170,7 +171,6 @@ public class VkUtils {
         }
 
         return response.toString();
-
     }
 
     public static byte[] requestChunk(String url) throws Exception {
@@ -210,37 +210,14 @@ public class VkUtils {
 
         while ((c[0] = d.read(b, 0, b.length)) != -1){
 
-            Observable.fromCallable(new Callable<Boolean>() {
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
                 @Override
-                public Boolean call() throws Exception {
-                    return true;
+                public void run() {
+                    sum[0] += c[0];
+                    track.progress = (int) (100.0 * sum[0] / fullSize);
+                    progressBar.setProgress(track.progress);
                 }
-            })
-                    .subscribeOn(AndroidSchedulers.mainThread())
-                    .subscribe(new Observer<Boolean>() {
-
-                        @Override
-                        public void onSubscribe(Disposable d) {
-
-                        }
-
-                        @Override
-                        public void onNext(Boolean tracks) {
-                            sum[0] += c[0];
-                            track.progress = (int)(100.0 * sum[0]/ fullSize);
-                            progressBar.setProgress( track.progress );
-                        }
-
-                        @Override
-                        public void onError(Throwable e) {
-
-                        }
-
-                        @Override
-                        public void onComplete() {
-
-                        }
-                    });
+            });
 
             bos.write(b, 0, c[0]);
         }
@@ -330,38 +307,13 @@ public class VkUtils {
 
             chunksIdx[0]++;
 
-            Observable.fromCallable(new Callable<Boolean>() {
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
                 @Override
-                public Boolean call() throws Exception {
-                    return true;
+                public void run() {
+                    track.progress = (int)(chunksIdx[0] * 100.0 / chunksSize );
+                    progressBar.setProgress( track.progress );
                 }
-            })
-                    .subscribeOn(AndroidSchedulers.mainThread())
-                    .subscribe(new Observer<Boolean>() {
-
-                        @Override
-                        public void onSubscribe(Disposable d) {
-
-                        }
-
-                        @Override
-                        public void onNext(Boolean tracks) {
-
-                            track.progress = (int)(chunksIdx[0] * 100.0 / chunksSize );
-                            progressBar.setProgress( track.progress );
-
-                        }
-
-                        @Override
-                        public void onError(Throwable e) {
-
-                        }
-
-                        @Override
-                        public void onComplete() {
-
-                        }
-                    });
+            });
 
             List<byte[]> segments = new ArrayList<>();
 
