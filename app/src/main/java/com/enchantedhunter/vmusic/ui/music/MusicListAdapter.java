@@ -124,6 +124,8 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
             }
         });
 
+        holder.setIsRecyclable(false);
+
         holder.download.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -162,6 +164,8 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
                         }else {
                             Toast.makeText(context, String.format("%s %s не загружен", track.getTitle(), track.getArtist()), Toast.LENGTH_SHORT).show();
                         }
+                        holder.setIsRecyclable(true);
+
                     }
 
                     @Override

@@ -34,7 +34,7 @@
             <TextView
                 android:id="@+id/trackName"
                 style="bold"
-                android:layout_width="0dp"
+                android:layout_width="292dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:ellipsize="end"
@@ -50,8 +50,7 @@
                 android:layout_height="36dp"
                 android:scaleX="0.6"
                 android:scaleY="0.6"
-                android:src="@mipmap/ic_close_black_24dp"
-                android:visibility="gone" />
+                android:src="@mipmap/ic_close_black_24dp" />
 
         </LinearLayout>
 
@@ -64,7 +63,7 @@
             <ImageButton
                 android:id="@+id/prev"
                 android:layout_width="0dp"
-                android:layout_height="6dp"
+                android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:background="@drawable/player_control_selector"
                 android:scaleX="0.8"

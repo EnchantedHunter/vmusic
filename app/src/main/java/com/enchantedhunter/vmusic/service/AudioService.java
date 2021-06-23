@@ -66,7 +66,7 @@ public class AudioService extends Service implements
     public final static String AUDIO_SEEK_PARAM = "SEEK_TO";
 
 
-    public final static String SERVICE_BROADCAST = "VKMD2.AUDIO_SERVICE.BROADCAST";
+    public final static String SERVICE_BROADCAST = "VMUSIC.AUDIO_SERVICE.BROADCAST";
     public final static String SERVICE_EVENT = "EVENT";
 
     public enum EVENT {
@@ -123,14 +123,18 @@ public class AudioService extends Service implements
 
                 updateLockscreenMetadata(title);
 
-                Intent notificationIntent = new Intent(this, MusicActivity.class);
+                Intent notificationIntent = new Intent(this, AudioService.class);
 
-                PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+                PendingIntent pendingIntent = PendingIntent.getService(this, 0, notificationIntent, 0);
 //                PendingIntent pendingIntentPlayPause = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_PLAY_PAUSE), PendingIntent.FLAG_UPDATE_CURRENT);
 //                PendingIntent pendingIntentStop = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_STOP), PendingIntent.FLAG_UPDATE_CURRENT);
 //                PendingIntent pendingIntentPrev = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_PREV), PendingIntent.FLAG_UPDATE_CURRENT);
 //                PendingIntent pendingIntentNext = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_NEXT), PendingIntent.FLAG_UPDATE_CURRENT);
 //
+
+                Intent closeIntent = new Intent(this, AudioService.class).putExtra(AudioService.SERVICE_ACTION, AudioService.ACTION.STOP.name());
+                PendingIntent closePendingIntent = PendingIntent.getService(this, 0, closeIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+
 
                 if (notificationManager == null) {
                     notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -148,9 +152,8 @@ public class AudioService extends Service implements
                 }
 
                 NotificationCompat.Builder builder = new NotificationCompat.Builder(this, channelId);
-
                 RemoteViews contentView = new RemoteViews(getPackageName(), R.layout.audio_service_notification);
-
+//                contentView.setOnClickPendingIntent(R.id.close, pendingIntent);
                 contentView.setTextViewText(R.id.trackName, currentTrack.getArtist() + " - " + currentTrack.getTitle());
 
 //                contentView.setOnClickPendingIntent(R.id.prev, pendingIntentPrev);
@@ -168,8 +171,9 @@ public class AudioService extends Service implements
 //
 //                contentView.setOnClickPendingIntent(R.id.next, pendingIntentNext);
 //
-//                contentView.setOnClickPendingIntent(R.id.close, pendingIntentStop);
+                contentView.setOnClickPendingIntent(R.id.pp, closePendingIntent);
 
+                builder.setContentIntent(closePendingIntent);
                 builder.setContentIntent(pendingIntent);
                 builder.setContent(contentView);
                 builder.setCustomBigContentView(contentView);
@@ -523,8 +527,8 @@ public class AudioService extends Service implements
 
     }
 
-    private static final String channelId = "vkmd2_channel";
-    private static final String channelName = "Channel VKMD2";
+    private static final String channelId = "vmusic_channel";
+    private static final String channelName = "Channel VMUSIC";
     private NotificationManager notificationManager;
     private NotificationChannel mChannel;
 
