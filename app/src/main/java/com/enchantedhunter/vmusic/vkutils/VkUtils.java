@@ -150,6 +150,8 @@ public class VkUtils {
 
         String all = result.toString();
 
+        Log.e("ERRRRRR", all);
+
         return parser.parse(result.toString());
     }
 

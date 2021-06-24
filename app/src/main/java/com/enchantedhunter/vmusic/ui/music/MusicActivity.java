@@ -3,6 +3,7 @@ package com.enchantedhunter.vmusic.ui.music;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 
@@ -20,6 +21,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -36,6 +39,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import io.reactivex.Observable;
 import io.reactivex.Observer;
@@ -61,36 +66,89 @@ public class MusicActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setHasFixedSize(true);
 
-        Observable.fromCallable(new Callable<List<Track>>() {
+        recyclerView.setAdapter(new MusicListAdapter(MusicActivity.this ,new ArrayList<Track>()));
+
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        final Handler handler = new Handler(Looper.getMainLooper());
+
+        executor.execute(new Runnable() {
+
+            MusicRepository musicRepository;
+
             @Override
-            public List<Track> call() throws Exception {
-                return refreshMusicList();
+            public void run() {
+                musicRepository = new MusicRepository();
+
+                try {
+                    final List<Track> tracks = musicRepository.refreshMusicList(MusicActivity.this);
+
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            MusicListAdapter musicListAdapter = (MusicListAdapter)recyclerView.getAdapter();
+                            musicListAdapter.getTrackList().addAll(tracks);
+                            musicListAdapter.notifyItemRangeInserted(musicListAdapter.getTrackList().size() - tracks.size(), musicListAdapter.getTrackList().size() + tracks.size());
+                        }
+                    });
+
+                } catch (Exception e) {
+                    Log.e("err", e.toString());
+                }
+
+
+                try {
+                    List<Track> tracks = null;
+                    while ((tracks = musicRepository.tryLoadNext()) != null){
+                        final List<Track> finalTracks = tracks;
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                MusicListAdapter musicListAdapter = (MusicListAdapter)recyclerView.getAdapter();
+                                musicListAdapter.getTrackList().addAll(finalTracks);
+                                musicListAdapter.notifyItemRangeInserted(musicListAdapter.getTrackList().size() - finalTracks.size(), musicListAdapter.getTrackList().size() + finalTracks.size());
+                            }
+                        });
+                    }
+                } catch (Exception e) {
+                    Log.e("err", e.toString());
+                }
+
             }
-        })
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<List<Track>>() {
-                    @Override
-                    public void onSubscribe(Disposable d) {
+        });
 
-                    }
 
-                    @Override
-                    public void onNext(List<Track> trackList) {
-                        MusicListAdapter adapter = new MusicListAdapter(MusicActivity.this ,trackList);
-                        recyclerView.setAdapter(adapter);
-                    }
+//        Observable.fromCallable(new Callable<List<Track>>() {
+//            @Override
+//            public List<Track> call() throws Exception {
+//                return refreshMusicList();
+//            }
+//        })
+//                .subscribeOn(Schedulers.io())
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .subscribe(new Observer<List<Track>>() {
+//                    @Override
+//                    public void onSubscribe(Disposable d) {
+//
+//                    }
+//
+//                    @Override
+//                    public void onNext(List<Track> trackList) {
+//                        MusicListAdapter adapter = new MusicListAdapter(MusicActivity.this ,trackList);
+//                        recyclerView.setAdapter(adapter);
+//                    }
+//
+//                    @Override
+//                    public void onError(Throwable e) {
+//                        Toast.makeText(getApplicationContext(), "Ошибка", Toast.LENGTH_SHORT).show();
+//                    }
+//
+//                    @Override
+//                    public void onComplete() {
+//
+//                    }
+//                });
 
-                    @Override
-                    public void onError(Throwable e) {
-                        Toast.makeText(getApplicationContext(), "Ошибка", Toast.LENGTH_SHORT).show();
-                    }
-
-                    @Override
-                    public void onComplete() {
-
-                    }
-                });
     }
 
     @Override
@@ -135,95 +193,5 @@ public class MusicActivity extends AppCompatActivity {
         else {
             return true;
         }
-    }
-
-    private List<Track> refreshMusicList(){
-
-        List<Track> tracks = new ArrayList<>();
-        String token = null;
-        try {
-
-            token = LocalStorage.getDataFromFile(MusicActivity.this, LocalStorage.TOKEN_STORAGE);
-            JsonElement resp = VkUtils.request("catalog.getAudio", token, new HashMap<String, String>(){{put("need_blocks", "1");}});
-
-            JsonArray sections = resp.getAsJsonObject().get("response").getAsJsonObject().get("catalog").getAsJsonObject().get("sections").getAsJsonArray();
-            JsonArray audios = resp.getAsJsonObject().get("response").getAsJsonObject().get("audios").getAsJsonArray();
-
-            String default_section_id = resp.getAsJsonObject().get("response").getAsJsonObject().get("catalog").getAsJsonObject().get("default_section").getAsString();
-
-            JsonObject music_section = sections.get(0).getAsJsonObject();
-            for( int i = 0 ; i < sections.size() ; i ++){
-                if(sections.get(i).getAsJsonObject().get("id").equals(default_section_id)){
-                    music_section = sections.get(i).getAsJsonObject();
-                    break;
-                }
-            }
-
-            String next_start = music_section.get("next_from").getAsString();
-
-//            try{
-                while (next_start != null){
-                    HashMap params = new HashMap<String, String>();
-                    params.put("start_from", next_start);
-                    params.put("section_id", music_section.get("id").getAsString());
-                    JsonElement resp1 = VkUtils.request("catalog.getSection", token, params);
-                    if(resp1 == null)
-                        for(int k = 0 ; k < 10 ; k++){
-                            resp1 = VkUtils.request("catalog.getSection", token, params);
-                            if(resp1!=null)
-                                break;
-                        }
-
-                    JsonElement response = resp1.getAsJsonObject().get("response");
-                        if(response != null){
-                            JsonElement section = response.getAsJsonObject().get("section");
-                            if(section != null){
-                                JsonElement next_from = section.getAsJsonObject().get("next_from");
-                                if(next_from != null){
-                                    next_start = resp1.getAsJsonObject().get("response").getAsJsonObject().get("section").getAsJsonObject().get("next_from").getAsString();
-                                }else
-                                    break;
-                            }else
-                                break;
-                        }else
-                            break;
-
-                    audios.addAll(resp1.getAsJsonObject().get("response").getAsJsonObject().get("audios").getAsJsonArray());
-
-                }
-
-//            }catch(Exception e){
-//                Log.e("err", e.toString());
-//            }
-
-
-            isStoragePermissionGranted();
-
-            for(int i = 0 ; i < audios.size() ; i ++){
-                Track track = new Track(audios.get(i).getAsJsonObject());
-                File folder = new File(Environment.getExternalStorageDirectory().toString() + "/VMUSIC/" + track.getOwnerId());
-
-                if(folder.exists()){
-                    File[] files =  folder.listFiles();
-                    String fileName = String.format("%s-%s", track.getTitle(), track.getArtist()).replaceAll("\"", "").replaceAll(":", "");
-
-                    for(File f : files){
-                        if(f.getName().contains(fileName)){
-                            track.progress = 100;
-                            track.isLoaded = true;
-                            track.setSavedPath(f.toString());
-                            break;
-                        }
-                    }
-                }
-
-                tracks.add(track);
-            }
-            return tracks;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 }

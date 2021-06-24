@@ -49,6 +49,8 @@ public class LoginActivity extends AppCompatActivity {
         passwordEditText = findViewById(R.id.password);
         loadingProgressBar = findViewById(R.id.loading);
 
+        isStoragePermissionGranted();
+
         String token = null;
         try {
             token = LocalStorage.getDataFromFile(LoginActivity.this, LocalStorage.TOKEN_STORAGE);
@@ -61,7 +63,6 @@ public class LoginActivity extends AppCompatActivity {
         else if(token.equals(""))
             return;
 
-        isStoragePermissionGranted();
 
         startMusicActivity();
     }

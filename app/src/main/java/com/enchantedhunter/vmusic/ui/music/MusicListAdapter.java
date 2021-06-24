@@ -24,6 +24,7 @@ import com.enchantedhunter.vmusic.service.AudioService;
 import com.enchantedhunter.vmusic.vkutils.VkUtils;
 
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -34,6 +35,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.TrackViewHolder> {
+
 
     public static class TrackViewHolder extends RecyclerView.ViewHolder {
 
@@ -71,6 +73,10 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
         this.context = context;
     }
 
+    public List<Track> getTrackList() {
+        return trackList;
+    }
+
     @NonNull
     @Override
     public MusicListAdapter.TrackViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -98,7 +104,7 @@ public class MusicListAdapter extends RecyclerView.Adapter<MusicListAdapter.Trac
         final Track track = trackList.get(position);
 
         holder.artist.setText(track.getArtist());
-        holder.title.setText(track.getTitle());
+        holder.title.setText(position +". "+track.getTitle());
         holder.progressBar.setProgress(track.progress);
 
         int h = track.getDuration()/3600;
