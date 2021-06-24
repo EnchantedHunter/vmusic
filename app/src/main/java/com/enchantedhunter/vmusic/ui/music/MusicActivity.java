@@ -1,22 +1,17 @@
 package com.enchantedhunter.vmusic.ui.music;
 
-import android.Manifest;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.os.AsyncTask;
-import android.os.Build;
+import android.content.IntentFilter;
 import android.os.Bundle;
 
 import com.enchantedhunter.vmusic.common.LocalStorage;
 import com.enchantedhunter.vmusic.data.Track;
 import com.enchantedhunter.vmusic.service.AudioService;
 import com.enchantedhunter.vmusic.ui.login.LoginActivity;
-import com.enchantedhunter.vmusic.vkutils.VkUtils;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -29,28 +24,18 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import com.enchantedhunter.vmusic.R;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
 
 import java.io.File;
+import java.net.InetAddress;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import io.reactivex.Observable;
-import io.reactivex.Observer;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.schedulers.Schedulers;
 
 public class MusicActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
+    private MusicReceiver musicReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,8 +51,88 @@ public class MusicActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setHasFixedSize(true);
 
-        recyclerView.setAdapter(new MusicListAdapter(MusicActivity.this ,new ArrayList<Track>()));
+        refreshPlaylist();
+    }
 
+    public boolean isInternetAvailable() {
+        try {
+            InetAddress ipAddr = InetAddress.getByName("google.com");
+            return !ipAddr.equals("");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public void refreshPlaylist(){
+        if(isInternetAvailable()){
+            loadPlaylist();
+        }else {
+            loadSavedPlaylist();
+        }
+    }
+
+    public void loadSavedPlaylist(){
+
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        final Handler handler = new Handler(Looper.getMainLooper());
+
+        executor.execute(new Runnable() {
+
+            @Override
+            public void run() {
+
+                File folder = new File(Environment.getExternalStorageDirectory().toString() + "/VMUSIC/");
+
+                final List<Track> tracks = new ArrayList<>();
+
+                if(folder.exists()) {
+                    for (File tracksFold : folder.listFiles()) {
+                        if(tracksFold.isDirectory()){
+                            for (File trackFile: tracksFold.listFiles()) {
+                                if(trackFile.isFile()){
+                                    try{
+                                        Track track = new Track();
+                                        track.setSavedPath(trackFile.getAbsolutePath());
+                                        track.setTitle(trackFile.getName().split("-")[0]);
+                                        track.setArtist(trackFile.getName().split("-")[1]);
+                                        track.isLoaded = true;
+                                        track.progress = 100;
+                                        track.setOwnerId("-1");
+                                        track.setTrackId("-1");
+                                        track.setUrl("");
+                                        tracks.add(track);
+                                    }catch (Exception e){
+                                        Log.e("err", e.toString());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        recyclerView.setAdapter(new MusicListAdapter(MusicActivity.this, tracks));
+                        Toast.makeText(getApplicationContext(), R.string.offline_mode, Toast.LENGTH_SHORT).show();
+
+                        if(musicReceiver != null)
+                            unregisterReceiver(musicReceiver);
+
+                        musicReceiver = new MusicReceiver(((MusicListAdapter)recyclerView.getAdapter()).getTrackList());
+                        IntentFilter intentFilter = new IntentFilter("vmusic");
+                        registerReceiver(musicReceiver, intentFilter);
+
+                    }
+                });
+            }
+        });
+
+    }
+
+    public void loadPlaylist(){
+
+        recyclerView.setAdapter(new MusicListAdapter(MusicActivity.this ,new ArrayList<Track>()));
 
         ExecutorService executor = Executors.newSingleThreadExecutor();
         final Handler handler = new Handler(Looper.getMainLooper());
@@ -89,13 +154,19 @@ public class MusicActivity extends AppCompatActivity {
                             MusicListAdapter musicListAdapter = (MusicListAdapter)recyclerView.getAdapter();
                             musicListAdapter.getTrackList().addAll(tracks);
                             musicListAdapter.notifyItemRangeInserted(musicListAdapter.getTrackList().size() - tracks.size(), musicListAdapter.getTrackList().size() + tracks.size());
+
+                            if(musicReceiver != null)
+                                unregisterReceiver(musicReceiver);
+
+                            musicReceiver = new MusicReceiver(((MusicListAdapter)recyclerView.getAdapter()).getTrackList());
+                            IntentFilter intentFilter = new IntentFilter("vmusic");
+                            registerReceiver(musicReceiver, intentFilter);
                         }
                     });
 
                 } catch (Exception e) {
                     Log.e("err", e.toString());
                 }
-
 
                 try {
                     List<Track> tracks = null;
@@ -107,6 +178,13 @@ public class MusicActivity extends AppCompatActivity {
                                 MusicListAdapter musicListAdapter = (MusicListAdapter)recyclerView.getAdapter();
                                 musicListAdapter.getTrackList().addAll(finalTracks);
                                 musicListAdapter.notifyItemRangeInserted(musicListAdapter.getTrackList().size() - finalTracks.size(), musicListAdapter.getTrackList().size() + finalTracks.size());
+
+                                if(musicReceiver != null)
+                                    unregisterReceiver(musicReceiver);
+
+                                musicReceiver = new MusicReceiver(((MusicListAdapter)recyclerView.getAdapter()).getTrackList());
+                                IntentFilter intentFilter = new IntentFilter("vmusic");
+                                registerReceiver(musicReceiver, intentFilter);
                             }
                         });
                     }
@@ -116,38 +194,6 @@ public class MusicActivity extends AppCompatActivity {
 
             }
         });
-
-
-//        Observable.fromCallable(new Callable<List<Track>>() {
-//            @Override
-//            public List<Track> call() throws Exception {
-//                return refreshMusicList();
-//            }
-//        })
-//                .subscribeOn(Schedulers.io())
-//                .observeOn(AndroidSchedulers.mainThread())
-//                .subscribe(new Observer<List<Track>>() {
-//                    @Override
-//                    public void onSubscribe(Disposable d) {
-//
-//                    }
-//
-//                    @Override
-//                    public void onNext(List<Track> trackList) {
-//                        MusicListAdapter adapter = new MusicListAdapter(MusicActivity.this ,trackList);
-//                        recyclerView.setAdapter(adapter);
-//                    }
-//
-//                    @Override
-//                    public void onError(Throwable e) {
-//                        Toast.makeText(getApplicationContext(), "Ошибка", Toast.LENGTH_SHORT).show();
-//                    }
-//
-//                    @Override
-//                    public void onComplete() {
-//
-//                    }
-//                });
 
     }
 
@@ -177,21 +223,6 @@ public class MusicActivity extends AppCompatActivity {
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
-        }
-    }
-
-    public  boolean isStoragePermissionGranted() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    == PackageManager.PERMISSION_GRANTED) {
-                return true;
-            } else {
-                ActivityCompat.requestPermissions( MusicActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
-                return false;
-            }
-        }
-        else {
-            return true;
         }
     }
 }

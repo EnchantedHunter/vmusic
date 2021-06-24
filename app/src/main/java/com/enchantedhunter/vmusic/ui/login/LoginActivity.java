@@ -42,7 +42,6 @@ public class LoginActivity extends AppCompatActivity {
 
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.getDefaultNightMode());
 
-        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.getDefaultNightMode());
         getSupportActionBar().setTitle(getString(R.string.enter));
 
         usernameEditText = findViewById(R.id.username);
@@ -83,7 +82,6 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void startMusicActivity(){
-        // check token
         boolean isActual = true;
 
         if(isActual){
@@ -132,10 +130,9 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onNext(Boolean aBoolean) {
                 if(!aBoolean){
-                    Toast.makeText(getApplicationContext(), "Ошибка", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), R.string.err, Toast.LENGTH_SHORT).show();
                     loadingProgressBar.setVisibility(View.GONE);
                 }else {
-//                            Toast.makeText(getApplicationContext(), "Success", Toast.LENGTH_SHORT).show();
                     startMusicActivity();
                     loadingProgressBar.setVisibility(View.GONE);
                 }
@@ -143,7 +140,7 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void onError(Throwable e) {
-                Toast.makeText(getApplicationContext(), "Ошибка", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getApplicationContext(), R.string.err, Toast.LENGTH_SHORT).show();
                 loadingProgressBar.setEnabled(false);
             }
 

@@ -25,4 +25,6 @@
     <string name="_01_23">01:23</string>
     <string name="_32323">32323</string>
     <string name="_1234">1234</string>
+    <string name="offline_mode">Приложение в режиме оффлайн.</string>
+    <string name="err">Ошибка</string>
 </resources>

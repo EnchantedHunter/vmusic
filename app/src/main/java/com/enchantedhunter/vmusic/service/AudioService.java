@@ -131,7 +131,9 @@ public class AudioService extends Service implements
                 PendingIntent pendingIntentPlayPause = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_PLAY_PAUSE), PendingIntent.FLAG_UPDATE_CURRENT);
                 PendingIntent pendingIntentStop = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_STOP), PendingIntent.FLAG_UPDATE_CURRENT);
                 PendingIntent pendingIntentPrev = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_PREV), PendingIntent.FLAG_UPDATE_CURRENT);
-                PendingIntent pendingIntentNext = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_NEXT), PendingIntent.FLAG_UPDATE_CURRENT);
+                PendingIntent pendingIntentNext = PendingIntent.getBroadcast(this, 0,
+                        new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_NEXT)
+                        , PendingIntent.FLAG_UPDATE_CURRENT);
 
                 Intent playPauseIntent = new Intent(this, AudioService.class).putExtra(AudioService.SERVICE_ACTION, ACTION.PLAY_OR_PAUSE.toString());
                 PendingIntent playPausePendingIntent = PendingIntent.getService(this, 0, playPauseIntent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -235,7 +237,13 @@ public class AudioService extends Service implements
         Log.d(LOG_TAG, "onCompletion");
         if (!wasError && !loopIsEnabled) {
             try {
-                handleAction(ACTION.NEXT, null);
+//                handleAction(ACTION.NEXT, null);
+
+                Intent intent = new Intent("vmusic")
+                        .putExtra(SERVICE_EVENT, NOTIFICATION_ACTION_NEXT)
+                        .putExtra(AUDIO_TRACK, currentTrack);
+                sendBroadcast(intent);
+
             } catch (Exception e) {
                 Log.e("err",e.toString());
             }
@@ -309,14 +317,10 @@ public class AudioService extends Service implements
                 registerPhoneStateListener();
                 registerRemoteClient();
 
-//                tracks = (List<Track>) intent.getExtras().getSerializable(AudioService.AUDIO_TRACKS);
-
                 Track track = (Track) intent.getExtras().getSerializable(AudioService.AUDIO_TRACK);
 
                 currentTrack = track;
                 preparePlayerForPlay();
-
-
 
                 break;
 
