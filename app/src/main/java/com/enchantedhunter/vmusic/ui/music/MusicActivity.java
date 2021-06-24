@@ -1,7 +1,9 @@
 package com.enchantedhunter.vmusic.ui.music;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 
 import com.enchantedhunter.vmusic.common.LocalStorage;
@@ -55,12 +57,8 @@ public class MusicActivity extends AppCompatActivity {
     }
 
     public boolean isInternetAvailable() {
-        try {
-            InetAddress ipAddr = InetAddress.getByName("google.com");
-            return !ipAddr.equals("");
-        } catch (Exception e) {
-            return false;
-        }
+        ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        return cm.getActiveNetworkInfo() != null && cm.getActiveNetworkInfo().isConnected();
     }
 
     public void refreshPlaylist(){
