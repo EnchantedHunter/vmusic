@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">v*music</string>
+    <string name="app_name">vmusic</string>
     <string name="music_activity">Музыка</string>
 
     <!-- Strings related to login -->

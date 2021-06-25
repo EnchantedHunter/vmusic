@@ -23,7 +23,6 @@ import android.widget.RemoteViews;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
-import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.enchantedhunter.vmusic.R;
 import com.enchantedhunter.vmusic.data.Track;
@@ -55,6 +54,7 @@ public class AudioService extends Service implements
         NEXT,
         PREV,
         SEEK_TO
+
     }
 
     public final static String AUDIO_PROVIDER = "OFFLINE_MODE";
@@ -74,6 +74,8 @@ public class AudioService extends Service implements
         PREPARE_FOR_PLAY, //AUDIO_TRACK_NAME_PARAM, AUDIO_TRACK_ARTIST_PARAM, AUDIO_TRACK_DURATION_PARAM
         START_PLAY,
         PROGRESS_UPDATE, //AUDIO_TRACK_PROGRESS_PARAM
+        NEXT,
+        PREV,
         PAUSE,
         STOP_SERVICE,
         ERROR
@@ -130,10 +132,13 @@ public class AudioService extends Service implements
                 PendingIntent pendingIntent = PendingIntent.getService(this, 0, notificationIntent, 0);
                 PendingIntent pendingIntentPlayPause = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_PLAY_PAUSE), PendingIntent.FLAG_UPDATE_CURRENT);
                 PendingIntent pendingIntentStop = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_STOP), PendingIntent.FLAG_UPDATE_CURRENT);
-                PendingIntent pendingIntentPrev = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_PREV), PendingIntent.FLAG_UPDATE_CURRENT);
-                PendingIntent pendingIntentNext = PendingIntent.getBroadcast(this, 0,
-                        new Intent(this, AudioServiceNotificationReceiver.class).setAction(NOTIFICATION_ACTION_NEXT)
-                        , PendingIntent.FLAG_UPDATE_CURRENT);
+
+                PendingIntent pendingIntentNext = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class)
+                        .setAction(NOTIFICATION_ACTION_NEXT)
+                        .putExtra(AUDIO_TRACK, currentTrack), PendingIntent.FLAG_UPDATE_CURRENT);
+                PendingIntent pendingIntentPrev = PendingIntent.getBroadcast(this, 0, new Intent(this, AudioServiceNotificationReceiver.class)
+                        .setAction(NOTIFICATION_ACTION_PREV)
+                        .putExtra(AUDIO_TRACK, currentTrack), PendingIntent.FLAG_UPDATE_CURRENT);
 
                 Intent playPauseIntent = new Intent(this, AudioService.class).putExtra(AudioService.SERVICE_ACTION, ACTION.PLAY_OR_PAUSE.toString());
                 PendingIntent playPausePendingIntent = PendingIntent.getService(this, 0, playPauseIntent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -157,8 +162,10 @@ public class AudioService extends Service implements
                 RemoteViews contentView = new RemoteViews(getPackageName(), R.layout.audio_service_notification);
                 contentView.setTextViewText(R.id.trackName, currentTrack.getArtist() + " " + currentTrack.getTitle());
 
-                contentView.setOnClickPendingIntent(R.id.prev, pendingIntentPrev);
                 contentView.setOnClickPendingIntent(R.id.pp, pendingIntentPlayPause);
+                contentView.setOnClickPendingIntent(R.id.prev, pendingIntentPrev);
+                contentView.setOnClickPendingIntent(R.id.next, pendingIntentNext);
+                contentView.setOnClickPendingIntent(R.id.close_btn, pendingIntentStop);
 
                 if (mediaPlayer != null) {
                     if (!mediaPlayer.isPlaying()) {
@@ -170,10 +177,7 @@ public class AudioService extends Service implements
                     }
                 }
 
-                contentView.setOnClickPendingIntent(R.id.next, pendingIntentNext);
-                contentView.setOnClickPendingIntent(R.id.close_btn, pendingIntentStop);
-
-                builder.setContentIntent(playPausePendingIntent);
+//                builder.setContentIntent(playPausePendingIntent);
                 builder.setContentIntent(pendingIntent);
                 builder.setContent(contentView);
                 builder.setCustomBigContentView(contentView);
@@ -237,20 +241,25 @@ public class AudioService extends Service implements
         Log.d(LOG_TAG, "onCompletion");
         if (!wasError && !loopIsEnabled) {
             try {
-//                handleAction(ACTION.NEXT, null);
-
-                Intent intent = new Intent("vmusic")
-                        .putExtra(SERVICE_EVENT, NOTIFICATION_ACTION_NEXT)
-                        .putExtra(AUDIO_TRACK, currentTrack);
-                sendBroadcast(intent);
-
+                sendBroadcastToActivity(EVENT.NEXT);
             } catch (Exception e) {
                 Log.e("err",e.toString());
             }
         }
     }
 
-    @Override
+    public void sendBroadcastToActivity(String cmd){
+        Intent intent = new Intent("vmusic")
+                .putExtra(SERVICE_EVENT, cmd)
+                .putExtra(AUDIO_TRACK, currentTrack);
+        sendBroadcast(intent);
+    }
+
+    public void sendBroadcastToActivity(EVENT cmd) {
+        sendBroadcastToActivity(cmd.name());
+    }
+
+        @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
         Log.d(LOG_TAG, "what: " + what);
         Log.d(LOG_TAG, "extra: " + extra);
@@ -326,53 +335,13 @@ public class AudioService extends Service implements
 
             case NEXT:
 
-                if(tracks != null){
-                    int next = -1;
-                    for(int i = 0 ;i < tracks.size() ; i++){
-                        if(tracks.get(i).equals(currentTrack)){
-                            next = i + 1;
-                            break;
-                        }
-                    }
+                sendBroadcastToActivity(EVENT.NEXT);
 
-                    if(next >= tracks.size())
-                        next = 0;
-
-                    Track nextTrack = tracks.get(next);
-                    if (nextTrack != null) {
-                        this.currentTrack = nextTrack;
-                        preparePlayerForPlay();
-                    } else {
-                        mediaPlayer.pause();
-                        sendBroadcastToActivity(EVENT.PAUSE);
-                    }
-                }
-
-                sentNotificationInForeground();
+//                sentNotificationInForeground();
                 break;
 
             case PREV:
-                if(tracks != null){
-                    int prev = -1;
-                    for(int i = 0 ;i < tracks.size() ; i++){
-                        if(tracks.get(i).equals(currentTrack)){
-                            prev = i - 1;
-                            break;
-                        }
-                    }
-
-                    if(prev < 0)
-                        prev = tracks.size() - 1;
-
-                    Track prevTrack = tracks.get(prev);
-                    if (prevTrack != null) {
-                        this.currentTrack = prevTrack;
-                        preparePlayerForPlay();
-                    } else {
-                        mediaPlayer.pause();
-                        sendBroadcastToActivity(EVENT.PAUSE);
-                    }
-                }
+                sendBroadcastToActivity(EVENT.PREV);
 
                 break;
 
@@ -437,6 +406,7 @@ public class AudioService extends Service implements
 //            headsetPlugReceiver = null;
 //        }
 
+
         phoneStateListener = null;
     }
 
@@ -465,45 +435,45 @@ public class AudioService extends Service implements
         sendBroadcastToActivity(EVENT.PREPARE_FOR_PLAY);
     }
 
-    private void sendBroadcastToActivity(EVENT event) {
-        try {
-            Intent intent = new Intent(SERVICE_BROADCAST);
-            intent.putExtra(SERVICE_EVENT, event.name());
-            switch (event) {
-                case PROVIDE_INFO:
-                    if (currentTrack != null) {
-                        intent.putExtra(AUDIO_TRACK_ID_PARAM, currentTrack.getTrackId());
-                        intent.putExtra(AUDIO_TRACK_NAME_PARAM, currentTrack.getTitle());
-                        intent.putExtra(AUDIO_TRACK_ARTIST_PARAM, currentTrack.getArtist());
-                        intent.putExtra(AUDIO_TRACK_DURATION_PARAM, currentTrack.getDuration());
-                        intent.putExtra(AUDIO_TRACK_PROGRESS_PARAM, mediaPlayer.getCurrentPosition());
-                        intent.putExtra(AUDIO_TRACK_IS_PLAY_PARAM, mediaPlayer.isPlaying());
-                    } else {
-                        throw new IllegalArgumentException("currentTrack is null");
-                    }
-                    break;
-                case PREPARE_FOR_PLAY:
-                    intent.putExtra(AUDIO_TRACK_ID_PARAM, currentTrack.getTrackId());
-                    intent.putExtra(AUDIO_TRACK_NAME_PARAM, currentTrack.getTitle());
-                    intent.putExtra(AUDIO_TRACK_ARTIST_PARAM, currentTrack.getArtist());
-                    intent.putExtra(AUDIO_TRACK_DURATION_PARAM, currentTrack.getDuration());
-                    break;
-                case STOP_SERVICE:
-                case START_PLAY:
-                case PAUSE:
-                case LOOP_ENABLED:
-                case LOOP_DISABLED:
-                case ERROR:
-                    break;
-                case PROGRESS_UPDATE:
-                    intent.putExtra(AUDIO_TRACK_PROGRESS_PARAM, mediaPlayer.getCurrentPosition());
-                    break;
-            }
-            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
-        } catch (Exception e) {
-            Log.e("err",e.toString());
-        }
-    }
+//    private void sendBroadcastToActivity(EVENT event) {
+//        try {
+//            Intent intent = new Intent(SERVICE_BROADCAST);
+//            intent.putExtra(SERVICE_EVENT, event.name());
+//            switch (event) {
+//                case PROVIDE_INFO:
+//                    if (currentTrack != null) {
+//                        intent.putExtra(AUDIO_TRACK_ID_PARAM, currentTrack.getTrackId());
+//                        intent.putExtra(AUDIO_TRACK_NAME_PARAM, currentTrack.getTitle());
+//                        intent.putExtra(AUDIO_TRACK_ARTIST_PARAM, currentTrack.getArtist());
+//                        intent.putExtra(AUDIO_TRACK_DURATION_PARAM, currentTrack.getDuration());
+//                        intent.putExtra(AUDIO_TRACK_PROGRESS_PARAM, mediaPlayer.getCurrentPosition());
+//                        intent.putExtra(AUDIO_TRACK_IS_PLAY_PARAM, mediaPlayer.isPlaying());
+//                    } else {
+//                        throw new IllegalArgumentException("currentTrack is null");
+//                    }
+//                    break;
+//                case PREPARE_FOR_PLAY:
+//                    intent.putExtra(AUDIO_TRACK_ID_PARAM, currentTrack.getTrackId());
+//                    intent.putExtra(AUDIO_TRACK_NAME_PARAM, currentTrack.getTitle());
+//                    intent.putExtra(AUDIO_TRACK_ARTIST_PARAM, currentTrack.getArtist());
+//                    intent.putExtra(AUDIO_TRACK_DURATION_PARAM, currentTrack.getDuration());
+//                    break;
+//                case STOP_SERVICE:
+//                case START_PLAY:
+//                case PAUSE:
+//                case LOOP_ENABLED:
+//                case LOOP_DISABLED:
+//                case ERROR:
+//                    break;
+//                case PROGRESS_UPDATE:
+//                    intent.putExtra(AUDIO_TRACK_PROGRESS_PARAM, mediaPlayer.getCurrentPosition());
+//                    break;
+//            }
+//            LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
+//        } catch (Exception e) {
+//            Log.e("err",e.toString());
+//        }
+//    }
 
     private void registerPhoneStateListener() {
         if (phoneStateListener == null) {

@@ -28,7 +28,6 @@ import android.widget.Toast;
 import com.enchantedhunter.vmusic.R;
 
 import java.io.File;
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -189,7 +188,6 @@ public class MusicActivity extends AppCompatActivity {
                 } catch (Exception e) {
                     Log.e("err", e.toString());
                 }
-
             }
         });
 
