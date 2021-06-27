@@ -42,6 +42,7 @@ public class MusicActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_music);
+
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -52,7 +53,12 @@ public class MusicActivity extends AppCompatActivity {
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setHasFixedSize(true);
 
+        initPlayerBottom();
         refreshPlaylist();
+    }
+
+    private void initPlayerBottom() {
+
     }
 
     public boolean isInternetAvailable() {
